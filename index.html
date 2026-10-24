@@ -1,0 +1,3125 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>AsGURU — Asisten Kerja Guru Terpadu</title>
+
+  <!-- PWA Manifest via Data URI (Single-File Requirement) -->
+  <link rel="manifest" href='data:application/manifest+json,{"name":"AsGURU - Asisten Kerja Guru Terpadu","short_name":"AsGURU","start_url":".","display":"standalone","background_color":"#072B7A","theme_color":"#072B7A","description":"Aplikasi asisten kerja guru terpadu dari persiapan, kelas, asesmen, nilai, hingga laporan.","icons":[{"src":"data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%23072B7A%22/><path d=%22M25 65 L50 25 L75 65 Z%22 fill=%22%23FBBF24%22/><circle cx=%2250%22 cy=%2258%22 r=%2212%22 fill=%22%23FFFFFF%22/></svg>","sizes":"192x192","type":"image/svg+xml"}]}' />
+  <meta name="theme-color" content="#072B7A" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          },
+          colors: {
+            navy: {
+              950: '#041745',
+              900: '#072B7A',
+              800: '#0A369D',
+              700: '#1045B8',
+            },
+            gold: {
+              400: '#FBBF24',
+              500: '#F59E0B',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* Full-Screen Wrapper untuk menutupi halaman bawaan Blogger tanpa edit XML */
+    #asguru-root {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      background: linear-gradient(155deg, #072B7A 0%, #05205E 65%, #041642 100%);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      color: #0F172A;
+    }
+
+    /* Custom Scrollbar Halus */
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.45);
+      border-radius: 9999px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 116, 139, 0.7);
+    }
+
+    /* Glassmorphism Utilities */
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+    .glass-white {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+
+    /* Hero Banner Pattern & Gradient sesuai referensi MGMP */
+    .hero-mgmp-gradient {
+      background: radial-gradient(circle at 82% 28%, rgba(37, 99, 235, 0.45) 0%, transparent 45%),
+                  linear-gradient(100deg, #003893 0%, #08337E 55%, #061E52 100%);
+    }
+
+    /* Soft Pastel Card Gradient Accents sesuai referensi gambar */
+    .stat-card-blue { background: linear-gradient(180deg, #FFFFFF 60%, #F0F7FF 100%); }
+    .stat-card-purple { background: linear-gradient(180deg, #FFFFFF 60%, #F6F2FF 100%); }
+    .stat-card-green { background: linear-gradient(180deg, #FFFFFF 60%, #EEFCF5 100%); }
+    .stat-card-amber { background: linear-gradient(180deg, #FFFFFF 60%, #FFFBEB 100%); }
+    .stat-card-cyan { background: linear-gradient(180deg, #FFFFFF 60%, #ECFEFF 100%); }
+    .stat-card-indigo { background: linear-gradient(180deg, #FFFFFF 60%, #EEF2FF 100%); }
+
+    /* Responsivitas Navigasi: Sidebar di Desktop, Bottom Bar di Mobile */
+    @media (max-width: 1023px) {
+      .desktop-sidebar {
+        display: none !important;
+      }
+      .mobile-bottom-nav {
+        display: flex !important;
+      }
+      .workspace-container {
+        border-radius: 22px 22px 0 0 !important;
+        margin-right: 0 !important;
+        padding-bottom: 84px !important;
+      }
+    }
+    @media (min-width: 1024px) {
+      .desktop-sidebar {
+        display: flex !important;
+      }
+      .mobile-bottom-nav {
+        display: none !important;
+      }
+    }
+
+    /* Mode Cetak Dokumen Resmi Sekolah */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #print-area, #print-area * {
+        visibility: visible;
+      }
+      #print-area {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: white;
+        color: black;
+        padding: 20px;
+        z-index: 9999999;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="asguru-root">
+    <!-- ================= BANNER MODE PREVIEW (HANYA MUNCUL JIKA IS_PREVIEW = true) ================= -->
+    <div id="preview-banner" class="hidden bg-amber-400 text-slate-950 text-xs font-semibold px-4 py-1.5 flex items-center justify-between shadow-sm shrink-0">
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-950 text-amber-400 uppercase tracking-wider">Mode Preview Aktif</span>
+        <span>Data berjalan di memori lokal browser. Ubah <code class="bg-amber-300 px-1 rounded font-mono">IS_PREVIEW = false</code> untuk terhubung 100% ke Supabase.</span>
+      </div>
+      <button id="btn-reset-preview" class="text-[11px] underline font-bold hover:text-blue-900">Reset Data Uji Coba</button>
+    </div>
+
+    <!-- ================= LAYAR LOGIN GURU (GLASSMORPHISM + NAVY) ================= -->
+    <div id="auth-screen" class="flex-1 flex items-center justify-center p-4 overflow-y-auto">
+      <div class="w-full max-w-md glass-white rounded-3xl shadow-2xl p-8 border border-white/40 relative overflow-hidden">
+        <div class="absolute -top-12 -right-12 w-32 h-32 bg-blue-600/10 rounded-full blur-2xl"></div>
+        <div class="absolute -bottom-12 -left-12 w-32 h-32 bg-amber-400/20 rounded-full blur-2xl"></div>
+
+        <!-- Brand Header -->
+        <div class="flex items-center gap-3.5 mb-6">
+          <div class="w-12 h-12 rounded-2xl bg-[#072B7A] flex items-center justify-center shadow-lg shadow-blue-900/30 text-amber-400 shrink-0">
+            <i data-lucide="graduation-cap" class="w-7 h-7"></i>
+          </div>
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-widest text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full">Asisten Kerja Guru</span>
+            <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight mt-0.5">AsGURU Terpadu</h1>
+          </div>
+        </div>
+
+        <p class="text-xs text-slate-500 mb-6 leading-relaxed">
+          Kelola persiapan mengajar, aktivitas kelas, bank soal, pengolahan nilai, hingga laporan wali kelas dalam satu ruang kerja terhubung.
+        </p>
+
+        <!-- Form Login Guru (Supabase Auth) -->
+        <form id="login-form" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">Email Akun Guru</label>
+            <div class="relative">
+              <i data-lucide="mail" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+              <input type="email" id="login-email" required placeholder="guru@sekolah.sch.id"
+                class="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 outline-none transition bg-white" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">Kata Sandi</label>
+            <div class="relative">
+              <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+              <input type="password" id="login-password" required placeholder="••••••••"
+                class="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 outline-none transition bg-white" />
+            </div>
+          </div>
+
+          <button type="submit" id="btn-submit-login"
+            class="w-full py-3 px-4 rounded-xl bg-[#072B7A] hover:bg-blue-800 text-white font-bold text-sm shadow-lg shadow-blue-900/25 flex items-center justify-center gap-2 transition active:scale-[0.99]">
+            <i data-lucide="log-in" class="w-4 h-4"></i>
+            <span>Masuk Ruang Kerja Guru</span>
+          </button>
+        </form>
+
+        <!-- Panel Pintas Login Preview (Hanya tampil saat IS_PREVIEW = true) -->
+        <div id="preview-quick-login" class="hidden mt-6 pt-5 border-t border-slate-200/80">
+          <div class="bg-amber-50 border border-amber-200/80 rounded-2xl p-3.5">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-600"></i> Pintasan Mode Uji Coba
+              </span>
+              <span class="text-[10px] text-amber-700 font-medium">Tanpa Password</span>
+            </div>
+            <button type="button" id="btn-quick-guru"
+              class="w-full py-2.5 px-4 rounded-xl bg-[#FBBF24] hover:bg-amber-300 text-slate-950 font-extrabold text-xs shadow-sm flex items-center justify-center gap-2 transition">
+              <i data-lucide="zap" class="w-4 h-4"></i>
+              <span>Quick Login Guru (Budi Santoso, S.Kom.)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= SHELL APLIKASI UTAMA (SESUAI REFERENSI UI MGMP) ================= -->
+    <div id="app-shell" class="hidden flex-1 flex flex-col overflow-hidden">
+      <!-- TOP BAR LUAR (ROYAL NAVY HEADER) -->
+      <header class="h-16 px-4 lg:px-6 flex items-center justify-between shrink-0 text-white">
+        <!-- Brand Kiri (Sejajar Sidebar) -->
+        <div class="flex items-center gap-3 w-60 shrink-0">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-900 border-2 border-amber-400 flex items-center justify-center shadow-md shrink-0">
+            <i data-lucide="book-open-check" class="w-5 h-5 text-amber-300"></i>
+          </div>
+          <div class="leading-tight overflow-hidden">
+            <div id="header-school-name" class="font-extrabold text-xs tracking-wide uppercase truncate">SMPN 1 BANDAR LAMPUNG</div>
+            <div class="text-[11px] text-amber-300 font-semibold truncate">AsGURU — Asisten Kerja Guru</div>
+            <div class="text-[10px] text-blue-200 italic truncate">Persiapan. Pelaksanaan. Dampak.</div>
+          </div>
+        </div>
+
+        <!-- Judul Halaman Aktif (Sejajar Kontainer Putih) -->
+        <div class="hidden md:flex flex-col flex-1 pl-2">
+          <h2 id="top-page-title" class="text-xl font-extrabold tracking-tight leading-none text-white">Dashboard</h2>
+          <p id="top-page-subtitle" class="text-xs text-blue-200 mt-1">Ruang Kerja Terpadu Guru • Tahun Ajaran 2026/2027 • Semester Ganjil</p>
+        </div>
+
+        <!-- Profil Guru & Tombol Keluar Kanan -->
+        <div class="flex items-center gap-2.5">
+          <button type="button" onclick="window.app.switchTab('ai')" title="Buka Asisten AI"
+            class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-semibold text-amber-300 transition">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            <span>Asisten AI</span>
+          </button>
+
+          <div class="flex items-center gap-2.5 bg-white/10 border border-white/15 rounded-full py-1 pl-1.5 pr-4">
+            <div id="header-user-initials" class="w-8 h-8 rounded-full bg-[#041745] border border-blue-400/40 flex items-center justify-center font-bold text-xs text-amber-300">
+              BS
+            </div>
+            <div class="leading-tight hidden sm:block">
+              <div id="header-user-name" class="text-xs font-bold text-white truncate max-w-[140px]">Budi Santoso, S.Kom.</div>
+              <div id="header-user-role" class="text-[10px] text-blue-200">Guru Mapel & Wali Kelas</div>
+            </div>
+          </div>
+
+          <button type="button" id="btn-logout"
+            class="bg-[#FBBF24] hover:bg-amber-300 text-slate-950 font-extrabold text-xs px-3.5 py-2 rounded-xl shadow-md flex items-center gap-1.5 transition active:scale-95">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Keluar</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- AREA TENGAH: SIDEBAR KIRI + WORKSPACE KANAN PUTIH -->
+      <div class="flex-1 flex overflow-hidden px-0 lg:px-4 pb-0 lg:pb-2 gap-3">
+        <!-- SIDEBAR KIRI (Desktop Fixed) -->
+        <aside class="desktop-sidebar w-56 shrink-0 flex-col justify-between py-2 pr-1 text-sm select-none overflow-y-auto custom-scroll">
+          <nav id="desktop-nav-list" class="space-y-1">
+            <!-- Di-render dinamis oleh JS -->
+          </nav>
+
+          <div class="mt-4 pt-3 border-t border-white/10 px-2">
+            <div class="rounded-2xl bg-white/5 border border-white/10 p-3 text-xs text-blue-100">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-amber-300 text-[11px]">Alur Kerja Terhubung</span>
+                <i data-lucide="link-2" class="w-3.5 h-3.5 text-amber-300"></i>
+              </div>
+              <p class="text-[11px] text-blue-200/90 leading-relaxed">
+                Data kelas, siswa, CP/TP, jurnal, hingga nilai tersinkronisasi otomatis.
+              </p>
+            </div>
+          </div>
+        </aside>
+
+        <!-- KONTEN UTAMA PUTIH MELENGKUNG (MAIN WHITE SURFACE) -->
+        <main class="workspace-container flex-1 bg-[#F8FAFC] rounded-[28px] shadow-2xl overflow-y-auto custom-scroll p-4 sm:p-6 lg:p-7 relative">
+          <!-- Konten Dinamis per Modul -->
+          <div id="module-content" class="max-w-7xl mx-auto space-y-6"></div>
+        </main>
+      </div>
+
+      <!-- FOOTER BAR BAWAH (ROYAL NAVY SESUAI REFERENSI GAMBAR) -->
+      <footer class="hidden lg:flex h-9 px-6 items-center justify-between text-[11px] text-blue-200 shrink-0">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+          <strong id="footer-school-label" class="text-white tracking-wide uppercase">ASGURU — SMPN 1 BANDAR LAMPUNG</strong>
+          <span class="text-blue-300 italic ml-1">Persiapan. Pelaksanaan. Tindak Lanjut.</span>
+        </div>
+        <div class="text-center">
+          <span class="font-semibold text-white">Portal Asisten Kerja Guru</span> • <span class="text-amber-300">Berbagi • Berinovasi • Berdampak</span>
+        </div>
+        <div class="text-right text-blue-200">
+          © 2026 AsGURU Terpadu • <span id="footer-ta-label">TA 2026/2027</span>
+        </div>
+      </footer>
+
+      <!-- BOTTOM NAVIGATION BAR (KHUSUS HP / MOBILE) -->
+      <nav id="mobile-nav-list" class="mobile-bottom-nav hidden fixed bottom-0 left-0 right-0 h-16 bg-[#05205E]/95 backdrop-blur-md border-t border-white/15 px-2 items-center justify-around z-50 text-white">
+        <!-- Di-render dinamis oleh JS -->
+      </nav>
+    </div>
+
+    <!-- ================= MODAL FORM DINAMIS ================= -->
+    <div id="modal-overlay" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[1000000] flex items-center justify-center p-4 overflow-y-auto">
+      <div class="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-100 overflow-hidden my-8 animate-fadeIn">
+        <div class="px-6 py-4 bg-[#072B7A] text-white flex items-center justify-between">
+          <h3 id="modal-title" class="font-extrabold text-base tracking-tight">Formulir Data</h3>
+          <button type="button" onclick="window.app.closeModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <div id="modal-body" class="p-6 max-h-[78vh] overflow-y-auto custom-scroll"></div>
+      </div>
+    </div>
+
+    <!-- ================= MODAL KONFIRMASI HAPUS (PENGGANTI confirm()) ================= -->
+    <div id="confirm-overlay" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[1000001] flex items-center justify-center p-4">
+      <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 text-center">
+        <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-3">
+          <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+        </div>
+        <h4 id="confirm-title" class="font-extrabold text-slate-900 text-base">Konfirmasi Tindakan</h4>
+        <p id="confirm-message" class="text-xs text-slate-500 mt-1.5 leading-relaxed">Apakah Anda yakin ingin melanjutkan tindakan ini?</p>
+        <div class="flex items-center gap-2.5 mt-5">
+          <button type="button" id="btn-confirm-cancel" class="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50">Batal</button>
+          <button type="button" id="btn-confirm-ok" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md">Ya, Lanjutkan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= TOAST NOTIFICATION (PENGGANTI alert()) ================= -->
+    <div id="toast-container" class="fixed top-4 right-4 z-[1000002] flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+    <!-- ================= AREA CETAK DOKUMEN RESMI SEKOLAH ================= -->
+    <div id="print-area" class="hidden"></div>
+  </div>
+
+  <!-- ================= LOGIKA UTAMA APLIKASI & INTEGRASI SUPABASE ================= -->
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    // ============================================================================
+    // KONFIGURASI APLIKASI (SAKLAR PREVIEW VS PRODUKSI SUPABASE)
+    // ============================================================================
+    const IS_PREVIEW = false; // Ubah menjadi false SAAT DEPLOY agar mode preview & data dummy hilang dan terhubung 100% ke Supabase
+    const SUPABASE_URL = "https://njptqmukurknlccxsdzd.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_kFwDays5kDt9E9v7nBHj9g_GuBn3Y4c";
+
+    let supabase = null;
+    if (!IS_PREVIEW && SUPABASE_URL.startsWith('http')) {
+      supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+
+    // ============================================================================
+    // REGISTRASI SERVICE WORKER DINAMIS VIA BLOB (PWA 1 FILE)
+    // ============================================================================
+    if ('serviceWorker' in navigator) {
+      const swCode = `
+        self.addEventListener('install', (e) => self.skipWaiting());
+        self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+        self.addEventListener('fetch', (e) => {});
+      `;
+      const blob = new Blob([swCode], { type: 'application/javascript' });
+      const swUrl = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(swUrl).catch(() => {});
+    }
+
+    // ============================================================================
+    // DAFTAR NAVIGASI 8 MODUL UTAMA ASGURU
+    // ============================================================================
+    const NAV_ITEMS = [
+      { id: 'dashboard', label: 'Dashboard', mobileLabel: 'Beranda', icon: 'home', subtitle: 'Jadwal hari ini, pengingat, pekerjaan tertunda & akses cepat' },
+      { id: 'persiapan', label: 'Persiapan Ajar', mobileLabel: 'Persiapan', icon: 'calendar-range', subtitle: 'Prota, Promes, CP, TP, ATP & Modul Ajar / RPP' },
+      { id: 'kelas', label: 'Kelas & Jurnal', mobileLabel: 'Kelas', icon: 'users', subtitle: 'Jadwal mengajar, presensi siswa, jurnal kelas & LKPD' },
+      { id: 'asesmen', label: 'Asesmen & Soal', mobileLabel: 'Asesmen', icon: 'file-check-2', subtitle: 'Kisi-kisi, bank soal PG/Uraian, kunci & rubrik' },
+      { id: 'nilai', label: 'Nilai & Remedial', mobileLabel: 'Nilai', icon: 'bar-chart-3', subtitle: 'Olah nilai otomatis, analisis KKTP, remedial & pengayaan' },
+      { id: 'walikelas', label: 'Wali Kelas & Dok', mobileLabel: 'Dokumen', icon: 'folder-kanban', subtitle: 'Catatan pembinaan, komunikasi ortu, dokumen & portofolio' },
+      { id: 'ai', label: 'Asisten AI', mobileLabel: 'Asisten AI', icon: 'sparkles', subtitle: 'Bantu buat draf RPP, LKPD, butir soal & perbaikan naskah' },
+      { id: 'master', label: 'Profil & Master', mobileLabel: 'Master', icon: 'sliders-horizontal', subtitle: 'Identitas sekolah, guru, tahun ajaran, kelas & daftar siswa' }
+    ];
+
+    // ============================================================================
+    // DATA DUMMY MINIMALIS (MAKSIMAL 1-2 BARIS PER TABEL HANYA SAAT IS_PREVIEW = true)
+    // ============================================================================
+    const INITIAL_PREVIEW_STATE = {
+      teacher: {
+        id: 'preview-teacher-1',
+        full_name: 'Budi Santoso, S.Kom., Gr.',
+        nip: '19880412 201503 1 004',
+        subject_name: 'Informatika',
+        school_name: 'SMP Negeri 1 Bandar Lampung',
+        school_address: 'Jl. Jenderal Sudirman No. 42, Kota Bandar Lampung',
+        principal_name: 'Drs. H. Hendra Wijaya, M.Pd.',
+        principal_nip: '19690810 199412 1 002',
+        academic_year: '2026/2027',
+        semester: 'Ganjil'
+      },
+      classes: [
+        { id: 'cls-1', class_name: 'Kelas 9A', grade_level: 9, schedule_day: 'Sabtu', schedule_time: '07:30 - 09:00', room: 'Lab Komputer 1' },
+        { id: 'cls-2', class_name: 'Kelas 9B', grade_level: 9, schedule_day: 'Senin', schedule_time: '09:15 - 10:45', room: 'Lab Komputer 2' }
+      ],
+      students: [
+        { id: 'std-1', class_id: 'cls-1', nisn: '0091827361', full_name: 'Aditya Pratama', gender: 'L' },
+        { id: 'std-2', class_id: 'cls-1', nisn: '0091827362', full_name: 'Nabila Putri Maharani', gender: 'P' }
+      ],
+      curriculum_plans: [
+        {
+          id: 'cur-1',
+          subject_name: 'Informatika',
+          grade_level: 9,
+          semester: 'Ganjil',
+          effective_weeks: 18,
+          topic_title: 'Berpikir Komputasional & Algoritma Dasar',
+          cp_text: 'Peserta didik mampu menerapkan berpikir komputasional untuk menyelesaikan persoalan secara sistematis.',
+          tp_text: '1. Menjelaskan konsep dekomposisi dan pengenalan pola.\n2. Menyusun algoritma urutan dan percabangan.',
+          atp_text: 'Minggu 1-2: Dekomposisi Masalah -> Minggu 3-4: Flowchart & Pseudocode',
+          lkpd_activity: 'Diskusi kelompok 4 orang memecahkan studi kasus rute tercepat pengantaran paket menggunakan graf sederhana.',
+          ice_breaking: 'Tebak Pola Tepuk Biner (0 = Tepuk Meja, 1 = Tepuk Tangan).'
+        }
+      ],
+      teaching_journals: [
+        {
+          id: 'jrn-1',
+          class_id: 'cls-1',
+          teaching_date: '2026-10-24',
+          meeting_no: 1,
+          topic: 'Berpikir Komputasional & Dekomposisi',
+          activities_notes: 'Siswa mempraktikkan pembuatan flowchart dan mengerjakan LKPD kelompok.',
+          reflection: 'Antusiasme tinggi, 1 siswa perlu pendampingan logika percabangan.',
+          attendance_summary: { Hadir: 1, Sakit: 0, Izin: 1, Alpa: 0 }
+        }
+      ],
+      attendances: [
+        { id: 'att-1', journal_id: 'jrn-1', student_id: 'std-1', status: 'Hadir', notes: 'Tepat waktu' },
+        { id: 'att-2', journal_id: 'jrn-1', student_id: 'std-2', status: 'Izin', notes: 'Mengikuti lomba OSN tingkat kota' }
+      ],
+      assessments: [
+        {
+          id: 'asm-1',
+          class_id: 'cls-1',
+          title: 'Asesmen Formatif 1: Algoritma & Flowchart',
+          assessment_type: 'Formatif',
+          kkm_target: 75,
+          questions_data: [
+            {
+              no: 1,
+              type: 'PG',
+              indicator: 'Disajikan masalah sehari-hari, siswa dapat menentukan langkah dekomposisi yang tepat.',
+              question: 'Langkah pertama dalam memecah persoalan besar menjadi bagian-bagian lebih kecil dalam berpikir komputasional disebut...',
+              options: ['A. Abstraksi', 'B. Dekomposisi', 'C. Pengenalan Pola', 'D. Algoritma'],
+              answer_key: 'B',
+              score_weight: 50
+            },
+            {
+              no: 2,
+              type: 'Uraian',
+              indicator: 'Siswa dapat menuliskan urutan algoritma menentukan bilangan genap atau ganjil.',
+              question: 'Tuliskan langkah algoritma (pseudocode) untuk menentukan apakah suatu bilangan bulat X merupakan bilangan Genap atau Ganjil!',
+              options: [],
+              answer_key: 'Baca X -> Bagi X dengan 2 -> Jika sisa bagi = 0 maka Genap, jika tidak maka Ganjil.',
+              score_weight: 50
+            }
+          ]
+        }
+      ],
+      grades: [
+        { id: 'grd-1', assessment_id: 'asm-1', student_id: 'std-1', raw_score: 88, final_score: 88, needs_remedial: false, remedial_score: null, teacher_feedback: 'Sangat baik dalam menyusun pseudocode.' },
+        { id: 'grd-2', assessment_id: 'asm-1', student_id: 'std-2', raw_score: 68, final_score: 78, needs_remedial: true, remedial_score: 78, teacher_feedback: 'Telah tuntas setelah bimbingan remedial struktur percabangan.' }
+      ],
+      homeroom_records: [
+        {
+          id: 'hmr-1',
+          student_id: 'std-2',
+          record_date: '2026-10-24',
+          category: 'Prestasi',
+          details: 'Mewakili sekolah dalam Olimpiade Sains Nasional (OSN) Bidang Informatika Tingkat Kota.',
+          parent_contact_note: 'Yth. Bapak/Ibu Orang Tua Nabila Putri, kami mengapresiasi kerja keras Nabila dalam persiapan OSN Informatika minggu ini.'
+        }
+      ],
+      teacher_portfolios: [
+        {
+          id: 'prt-1',
+          title: 'Sertifikat Pelatihan Kurikulum Nasional & Pembelajaran Mendalam',
+          category: 'Sertifikat & Pelatihan',
+          date_achieved: '2026-09-15',
+          organizer: 'Balai Guru Penggerak (BGP) Provinsi Lampung',
+          reflection_notes: 'Menerapkan asesmen formatif berbasis rubrik autentik di kelas 9.'
+        }
+      ]
+    };
+
+    // ============================================================================
+    // STATE APLIKASI UTAMA
+    // ============================================================================
+    const state = {
+      user: null,
+      activeTab: 'dashboard',
+      selectedClassId: 'cls-1',
+      selectedAssessmentId: 'asm-1',
+      teacher: null,
+      classes: [],
+      students: [],
+      curriculum_plans: [],
+      teaching_journals: [],
+      attendances: [],
+      assessments: [],
+      grades: [],
+      homeroom_records: [],
+      teacher_portfolios: []
+    };
+
+    // ============================================================================
+    // UTILITAS UI: TOAST & MODAL KONFIRMASI (TANPA alert/confirm BROWSER)
+    // ============================================================================
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const el = document.createElement('div');
+      const colors = {
+        success: 'bg-emerald-600 text-white border-emerald-500',
+        error: 'bg-rose-600 text-white border-rose-500',
+        info: 'bg-[#072B7A] text-white border-blue-700',
+        warning: 'bg-amber-400 text-slate-950 border-amber-500'
+      };
+      el.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl border text-xs font-bold transition-all duration-300 ${colors[type] || colors.info}`;
+      el.innerHTML = `
+        <i data-lucide="${type === 'error' ? 'alert-circle' : type === 'warning' ? 'bell' : 'check-circle-2'}" class="w-4 h-4 shrink-0"></i>
+        <span class="flex-1 leading-snug">${message}</span>
+      `;
+      container.appendChild(el);
+      lucide.createIcons();
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(-8px)';
+        setTimeout(() => el.remove(), 250);
+      }, 3200);
+    }
+
+    function askConfirm(title, message, onConfirm) {
+      const overlay = document.getElementById('confirm-overlay');
+      document.getElementById('confirm-title').textContent = title;
+      document.getElementById('confirm-message').textContent = message;
+      overlay.classList.remove('hidden');
+
+      const btnOk = document.getElementById('btn-confirm-ok');
+      const btnCancel = document.getElementById('btn-confirm-cancel');
+
+      const cleanup = () => {
+        overlay.classList.add('hidden');
+        btnOk.onclick = null;
+        btnCancel.onclick = null;
+      };
+
+      btnCancel.onclick = cleanup;
+      btnOk.onclick = async () => {
+        cleanup();
+        await onConfirm();
+      };
+    }
+
+    function openModal(title, htmlContent) {
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('modal-body').innerHTML = htmlContent;
+      document.getElementById('modal-overlay').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeModal() {
+      document.getElementById('modal-overlay').classList.add('hidden');
+    }
+
+    // ============================================================================
+    // PENYIMPANAN DATA (HYBRID: MEMORI LOKAL SAAT PREVIEW / SUPABASE SAAT DEPLOY)
+    // ============================================================================
+    const STORAGE_KEY = 'ASGURU_PREVIEW_DATA_V1';
+
+    function loadPreviewData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : structuredClone(INITIAL_PREVIEW_STATE);
+        Object.assign(state, parsed);
+        if (!state.selectedClassId && state.classes.length > 0) {
+          state.selectedClassId = state.classes[0].id;
+        }
+        if (!state.selectedAssessmentId && state.assessments.length > 0) {
+          state.selectedAssessmentId = state.assessments[0].id;
+        }
+      } catch (err) {
+        Object.assign(state, structuredClone(INITIAL_PREVIEW_STATE));
+      }
+    }
+
+    function savePreviewData() {
+      if (!IS_PREVIEW) return;
+      const snapshot = {
+        teacher: state.teacher,
+        classes: state.classes,
+        students: state.students,
+        curriculum_plans: state.curriculum_plans,
+        teaching_journals: state.teaching_journals,
+        attendances: state.attendances,
+        assessments: state.assessments,
+        grades: state.grades,
+        homeroom_records: state.homeroom_records,
+        teacher_portfolios: state.teacher_portfolios
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    }
+
+    async function fetchSupabaseAll() {
+      if (IS_PREVIEW || !supabase || !state.user) return;
+      try {
+        const uid = state.user.id;
+        const [
+          { data: teacherData },
+          { data: classesData },
+          { data: studentsData },
+          { data: plansData },
+          { data: journalsData },
+          { data: attendancesData },
+          { data: assessmentsData },
+          { data: gradesData },
+          { data: homeroomData },
+          { data: portfolioData }
+        ] = await Promise.all([
+          supabase.from('teachers').select('*').eq('id', uid).maybeSingle(),
+          supabase.from('classes').select('*').eq('teacher_id', uid).order('created_at', { ascending: true }),
+          supabase.from('students').select('*').eq('teacher_id', uid).order('full_name', { ascending: true }),
+          supabase.from('curriculum_plans').select('*').eq('teacher_id', uid).order('created_at', { ascending: false }),
+          supabase.from('teaching_journals').select('*').eq('teacher_id', uid).order('teaching_date', { ascending: false }),
+          supabase.from('attendances').select('*').eq('teacher_id', uid),
+          supabase.from('assessments').select('*').eq('teacher_id', uid).order('created_at', { ascending: false }),
+          supabase.from('grades').select('*').eq('teacher_id', uid),
+          supabase.from('homeroom_records').select('*').eq('teacher_id', uid).order('record_date', { ascending: false }),
+          supabase.from('teacher_portfolios').select('*').eq('teacher_id', uid).order('date_achieved', { ascending: false })
+        ]);
+
+        state.teacher = teacherData || {
+          id: uid,
+          full_name: state.user.email.split('@')[0],
+          nip: '-',
+          subject_name: 'Mata Pelajaran',
+          school_name: 'Nama Sekolah Anda',
+          school_address: 'Alamat Sekolah',
+          principal_name: 'Kepala Sekolah',
+          principal_nip: '-',
+          academic_year: '2026/2027',
+          semester: 'Ganjil'
+        };
+        state.classes = classesData || [];
+        state.students = studentsData || [];
+        state.curriculum_plans = plansData || [];
+        state.teaching_journals = journalsData || [];
+        state.attendances = attendancesData || [];
+        state.assessments = assessmentsData || [];
+        state.grades = gradesData || [];
+        state.homeroom_records = homeroomData || [];
+        state.teacher_portfolios = portfolioData || [];
+
+        if (state.classes.length > 0 && !state.selectedClassId) {
+          state.selectedClassId = state.classes[0].id;
+        }
+        if (state.assessments.length > 0 && !state.selectedAssessmentId) {
+          state.selectedAssessmentId = state.assessments[0].id;
+        }
+      } catch (err) {
+        showToast('Gagal memuat data dari Supabase: ' + err.message, 'error');
+      }
+    }
+
+    // ============================================================================
+    // RENDER HEADER, SIDEBAR & NAVIGASI UTAMA
+    // ============================================================================
+    function updateShellHeader() {
+      const t = state.teacher || {};
+      const name = t.full_name || 'Guru';
+      const initials = name.split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || 'GR';
+
+      document.getElementById('header-school-name').textContent = t.school_name || 'SEKOLAH ANDA';
+      document.getElementById('header-user-name').textContent = name;
+      document.getElementById('header-user-initials').textContent = initials;
+      document.getElementById('header-user-role').textContent = `Guru ${t.subject_name || 'Mapel'}`;
+      document.getElementById('footer-school-label').textContent = `ASGURU — ${(t.school_name || 'SEKOLAH').toUpperCase()}`;
+      document.getElementById('footer-ta-label').textContent = `TA ${t.academic_year || '2026/2027'}`;
+
+      const activeNav = NAV_ITEMS.find(n => n.id === state.activeTab) || NAV_ITEMS[0];
+      document.getElementById('top-page-title').textContent = activeNav.label;
+      document.getElementById('top-page-subtitle').textContent = `${activeNav.subtitle} • ${t.school_name || ''} • TA ${t.academic_year || '2026/2027'}`;
+    }
+
+    function renderNavigation() {
+      const desktopNav = document.getElementById('desktop-nav-list');
+      const mobileNav = document.getElementById('mobile-nav-list');
+
+      desktopNav.innerHTML = NAV_ITEMS.map(item => {
+        const isActive = state.activeTab === item.id;
+        return `
+          <button type="button" onclick="window.app.switchTab('${item.id}')"
+            class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-150 text-left ${
+              isActive
+                ? 'bg-[#FBBF24] text-slate-950 font-extrabold shadow-md shadow-amber-500/20'
+                : 'text-blue-100 hover:text-white hover:bg-white/10 font-medium'
+            }">
+            <i data-lucide="${item.icon}" class="w-4 h-4 shrink-0 ${isActive ? 'text-slate-950' : 'text-blue-200'}"></i>
+            <span class="truncate text-xs">${item.label}</span>
+          </button>
+        `;
+      }).join('');
+
+      // Di layar HP tampilkan 5 menu utama + tombol menu lainnya
+      const mobilePrimary = ['dashboard', 'persiapan', 'kelas', 'asesmen', 'nilai', 'ai'];
+      mobileNav.innerHTML = NAV_ITEMS.filter(n => mobilePrimary.includes(n.id)).map(item => {
+        const isActive = state.activeTab === item.id;
+        return `
+          <button type="button" onclick="window.app.switchTab('${item.id}')"
+            class="flex flex-col items-center justify-center py-1 px-2 rounded-xl transition ${
+              isActive ? 'text-[#FBBF24] font-extrabold' : 'text-blue-200 hover:text-white'
+            }">
+            <i data-lucide="${item.icon}" class="w-4 h-4 mb-0.5"></i>
+            <span class="text-[10px] tracking-tight">${item.mobileLabel}</span>
+          </button>
+        `;
+      }).join('') + `
+        <button type="button" onclick="window.app.openMobileMoreMenu()"
+          class="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-blue-200 hover:text-white">
+          <i data-lucide="menu" class="w-4 h-4 mb-0.5"></i>
+          <span class="text-[10px]">Lainnya</span>
+        </button>
+      `;
+
+      lucide.createIcons();
+    }
+
+    function switchTab(tabId) {
+      state.activeTab = tabId;
+      updateShellHeader();
+      renderNavigation();
+      renderActiveModule();
+    }
+
+    // ============================================================================
+    // MODUL 1: BERANDA SAYA / DASHBOARD (100% SESUAI REFERENSI UI GAMBAR MGMP)
+    // ============================================================================
+    function renderDashboard() {
+      const t = state.teacher || {};
+      const totalStudents = state.students.length;
+      const totalClasses = state.classes.length;
+      const totalJournals = state.teaching_journals.length;
+      const totalModules = state.curriculum_plans.length;
+      const totalAssessments = state.assessments.length;
+
+      // Hitung rekap kehadiran terbaru
+      let hadirCount = 0;
+      let izinSakitCount = 0;
+      state.attendances.forEach(a => {
+        if (a.status === 'Hadir') hadirCount++;
+        else izinSakitCount++;
+      });
+
+      // Hitung siswa yang memerlukan remedial
+      const remedialCount = state.grades.filter(g => g.needs_remedial).length;
+      const tuntasCount = state.grades.filter(g => !g.needs_remedial).length;
+
+      const latestJournalDate = state.teaching_journals[0]?.teaching_date || 'Belum ada';
+
+      return `
+        <!-- HERO BANNER ROYAL BLUE SESUAI REFERENSI GAMBAR MGMP -->
+        <section class="hero-mgmp-gradient rounded-3xl p-6 lg:p-8 text-white shadow-xl relative overflow-hidden">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative z-10">
+            <!-- Kiri: Tagline, Pertanyaan Utama, Deskripsi & 5 Tombol Pintas -->
+            <div class="lg:col-span-6 space-y-3">
+              <div class="inline-flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-widest text-[#FBBF24]">
+                <span>PORTAL ASGURU TERPADU • TA ${t.academic_year || '2026/2027'}</span>
+              </div>
+
+              <h1 class="text-2xl sm:text-3xl font-extrabold leading-tight tracking-tight">
+                Apa yang ingin <br class="hidden sm:inline" />
+                <span class="text-[#FBBF24]">diselesaikan hari ini?</span>
+              </h1>
+
+              <p class="text-xs sm:text-sm text-blue-100/90 leading-relaxed max-w-xl">
+                Satu ruang kerja pintar bagi guru <strong class="text-white">${t.subject_name || 'Mata Pelajaran'}</strong> untuk menyiapkan perangkat pembelajaran, mengisi jurnal & presensi kelas, menyusun asesmen, hingga mengolah nilai secara terhubung.
+              </p>
+
+              <!-- 5 Tombol Utama Sesuai Konsep AsGURU -->
+              <div class="pt-2 flex flex-wrap items-center gap-2.5">
+                <button onclick="window.app.switchTab('persiapan')"
+                  class="px-4 py-2.5 rounded-xl bg-[#FBBF24] hover:bg-amber-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 flex items-center gap-2 transition active:scale-95">
+                  <i data-lucide="layout-template" class="w-4 h-4"></i>
+                  <span>Siapkan Pembelajaran</span>
+                </button>
+
+                <button onclick="window.app.switchTab('kelas')"
+                  class="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/25 text-white font-semibold text-xs flex items-center gap-1.5 backdrop-blur-sm transition">
+                  <i data-lucide="door-open" class="w-4 h-4 text-amber-300"></i>
+                  <span>Masuk Kelas</span>
+                </button>
+
+                <button onclick="window.app.switchTab('asesmen')"
+                  class="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/25 text-white font-semibold text-xs flex items-center gap-1.5 backdrop-blur-sm transition">
+                  <i data-lucide="file-plus-2" class="w-4 h-4 text-amber-300"></i>
+                  <span>Buat Asesmen</span>
+                </button>
+
+                <button onclick="window.app.switchTab('nilai')"
+                  class="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/25 text-white font-semibold text-xs flex items-center gap-1.5 backdrop-blur-sm transition">
+                  <i data-lucide="calculator" class="w-4 h-4 text-amber-300"></i>
+                  <span>Olah Nilai</span>
+                </button>
+
+                <button onclick="window.app.switchTab('walikelas')"
+                  class="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/25 text-white font-semibold text-xs flex items-center gap-1.5 backdrop-blur-sm transition">
+                  <i data-lucide="printer" class="w-4 h-4 text-amber-300"></i>
+                  <span>Buat Dokumen</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Tengah: Ilustrasi Vektor Laptop & Ikon Mengambang (Persis Referensi Gambar) -->
+            <div class="hidden lg:flex lg:col-span-3 items-center justify-center">
+              <div class="relative w-44 h-36 flex items-center justify-center">
+                <!-- Floating Badge Play Kuning -->
+                <div class="absolute -left-3 top-4 w-10 h-10 rounded-xl bg-[#FBBF24] text-slate-950 flex items-center justify-center shadow-lg">
+                  <i data-lucide="play" class="w-5 h-5 fill-current"></i>
+                </div>
+                <!-- Floating Badge Sparkle Bawah Kiri -->
+                <div class="absolute left-0 bottom-2 w-9 h-9 rounded-xl bg-blue-600/80 border border-white/30 text-amber-300 flex items-center justify-center shadow-md">
+                  <i data-lucide="sparkles" class="w-4 h-4"></i>
+                </div>
+                <!-- Laptop Screen Illustration -->
+                <div class="w-32 h-24 rounded-xl bg-slate-900 border-2 border-blue-400/50 shadow-2xl p-2.5 flex flex-col justify-between">
+                  <div class="flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+                    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                  </div>
+                  <div class="space-y-1.5">
+                    <div class="h-2 w-12 bg-sky-400 rounded"></div>
+                    <div class="h-2 w-20 bg-emerald-400 rounded"></div>
+                    <div class="h-2 w-16 bg-amber-400 rounded"></div>
+                  </div>
+                  <div class="text-right text-[10px] font-mono text-amber-300 font-bold">&lt;/&gt;</div>
+                </div>
+                <!-- Floating Book Kanan Atas -->
+                <div class="absolute -right-2 top-2 w-10 h-10 rounded-xl bg-white text-blue-900 flex items-center justify-center shadow-lg">
+                  <i data-lucide="book-open" class="w-5 h-5"></i>
+                </div>
+                <!-- Floating Cube Kanan Bawah -->
+                <div class="absolute right-0 bottom-1 w-9 h-9 rounded-xl bg-sky-500 text-white flex items-center justify-center shadow-lg">
+                  <i data-lucide="box" class="w-4 h-4"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Kanan: Kotak Glass Ringkasan Pilar Kerja Guru (Persis Referensi Gambar) -->
+            <div class="lg:col-span-3 glass-panel rounded-2xl p-4 space-y-3">
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-lg bg-amber-400/20 border border-amber-300/40 flex items-center justify-center text-amber-300 shrink-0 mt-0.5">
+                  <i data-lucide="lightbulb" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <div class="text-xs font-extrabold text-white">Persiapan</div>
+                  <div class="text-[11px] text-blue-100">CP, TP, ATP & Modul Ajar siap pakai</div>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-lg bg-amber-400/20 border border-amber-300/40 flex items-center justify-center text-amber-300 shrink-0 mt-0.5">
+                  <i data-lucide="users" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <div class="text-xs font-extrabold text-white">Pelaksanaan</div>
+                  <div class="text-[11px] text-blue-100">Presensi, jurnal & LKPD terintegrasi</div>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-3">
+                <div class="w-8 h-8 rounded-lg bg-amber-400/20 border border-amber-300/40 flex items-center justify-center text-amber-300 shrink-0 mt-0.5">
+                  <i data-lucide="target" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <div class="text-xs font-extrabold text-white">Dampak & Laporan</div>
+                  <div class="text-[11px] text-blue-100">Analisis nilai, remedial & wali kelas</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- BARISAN 6 KARTU METRIK BENTO (PERSIS GAYA VISUAL GAMBAR REFERENSI) -->
+        <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+          <!-- Card 1: Total Siswa -->
+          <div class="stat-card-blue rounded-2xl p-4 border border-slate-200/70 shadow-sm flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-600/25 shrink-0">
+              <i data-lucide="users" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="text-[11px] font-semibold text-slate-500">Total Siswa</div>
+              <div class="text-2xl font-black text-slate-900 leading-tight">${totalStudents}</div>
+              <div class="text-[10px] text-slate-400">${totalClasses} Kelas Diampu</div>
+            </div>
+          </div>
+
+          <!-- Card 2: Total Pertemuan / Jurnal -->
+          <div class="stat-card-purple rounded-2xl p-4 border border-slate-200/70 shadow-sm flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-600/25 shrink-0">
+              <i data-lucide="calendar" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="text-[11px] font-semibold text-slate-500">Jurnal Kelas</div>
+              <div class="text-2xl font-black text-slate-900 leading-tight">${totalJournals}</div>
+              <div class="text-[10px] text-slate-400">TA ${t.academic_year || '2026/2027'}</div>
+            </div>
+          </div>
+
+          <!-- Card 3: Siswa Hadir -->
+          <div class="stat-card-green rounded-2xl p-4 border border-slate-200/70 shadow-sm flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/25 shrink-0">
+              <i data-lucide="check" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="text-[11px] font-semibold text-slate-500">Hadir</div>
+              <div class="text-2xl font-black text-slate-900 leading-tight">${hadirCount}</div>
+              <div class="text-[10px] text-slate-400">Log: ${latestJournalDate}</div>
+            </div>
+          </div>
+
+          <!-- Card 4: Perlu Remedial -->
+          <div class="stat-card-amber rounded-2xl p-4 border border-slate-200/70 shadow-sm flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center shadow-md shadow-amber-400/30 shrink-0">
+              <i data-lucide="clock" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="text-[11px] font-semibold text-slate-500">Remedial</div>
+              <div class="text-2xl font-black text-slate-900 leading-tight">${remedialCount}</div>
+              <div class="text-[10px] text-slate-400">Tindak lanjut nilai</div>
+            </div>
+          </div>
+
+          <!-- Card 5: Izin / Sakit / Tidak Hadir -->
+          <div class="stat-card-cyan rounded-2xl p-4 border border-slate-200/70 shadow-sm flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-sky-600 text-white flex items-center justify-center shadow-md shadow-sky-600/25 shrink-0">
+              <i data-lucide="file-text" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="text-[11px] font-semibold text-slate-500">Izin / Absen</div>
+              <div class="text-2xl font-black text-slate-900 leading-tight">${izinSakitCount}</div>
+              <div class="text-[10px] text-slate-400">Catatan presensi</div>
+            </div>
+          </div>
+
+          <!-- Card 6: Total Perangkat & Bank Soal -->
+          <div class="stat-card-indigo rounded-2xl p-4 border border-slate-200/70 shadow-sm flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-blue-700 text-white flex items-center justify-center shadow-md shadow-blue-700/25 shrink-0">
+              <i data-lucide="folder" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <div class="text-[11px] font-semibold text-slate-500">Modul & Soal</div>
+              <div class="text-2xl font-black text-slate-900 leading-tight">${totalModules + totalAssessments}</div>
+              <div class="text-[10px] text-slate-400">${totalModules} RPP • ${totalAssessments} Soal</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- GRID BAWAH 3 KOLOM (GRAFIK BATANG, DONUT STATUS, & AKTIVITAS TERBARU) -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <!-- Kolom 1: Jadwal & Grafik Kehadiran/Ketuntasan per Kelas (5 Kolom) -->
+          <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                  <i data-lucide="bar-chart-2" class="w-4 h-4 text-blue-600"></i>
+                  <span>Jadwal Mengajar & Ketercapaian Kelas</span>
+                </h3>
+                <button onclick="window.app.switchTab('kelas')" class="text-[11px] font-bold text-blue-600 hover:underline">Buka Kelas →</button>
+              </div>
+
+              ${state.classes.length === 0 ? `
+                <div class="py-10 text-center text-xs text-slate-400">Belum ada kelas terdaftar. Tambahkan di menu Profil & Master.</div>
+              ` : `
+                <div class="space-y-3">
+                  ${state.classes.map(cls => {
+                    const countStd = state.students.filter(s => s.class_id === cls.id).length;
+                    const countJrn = state.teaching_journals.filter(j => j.class_id === cls.id).length;
+                    const pct = Math.min(100, Math.max(25, countJrn * 50));
+                    return `
+                      <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/60">
+                        <div class="flex items-center justify-between text-xs font-bold text-slate-800 mb-1">
+                          <span>${cls.class_name} (${cls.schedule_day || 'Jadwal'}, ${cls.schedule_time || '-'})</span>
+                          <span class="text-blue-700">${countStd} Siswa</span>
+                        </div>
+                        <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden my-1.5">
+                          <div class="h-full bg-gradient-to-r from-blue-600 to-amber-400 rounded-full" style="width: ${pct}%"></div>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] text-slate-500">
+                          <span>Ruang: ${cls.room || '-'}</span>
+                          <span>${countJrn} Pertemuan Terlaksana</span>
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              `}
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+              <span>Pilih kelas untuk langsung mengisi presensi & jurnal</span>
+              <button onclick="window.app.switchTab('kelas')" class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 font-bold hover:bg-blue-100">Isi Presensi</button>
+            </div>
+          </div>
+
+          <!-- Kolom 2: Status Ketuntasan & Kehadiran (Donut Chart Visual - 3 Kolom) -->
+          <div class="lg:col-span-3 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm flex flex-col justify-between">
+            <h3 class="font-extrabold text-sm text-slate-900 flex items-center gap-2 mb-3">
+              <i data-lucide="pie-chart" class="w-4 h-4 text-blue-600"></i>
+              <span>Status Capaian & Hadir</span>
+            </h3>
+
+            <div class="flex flex-col items-center justify-center my-2">
+              <svg viewBox="0 0 36 36" class="w-32 h-32">
+                <path class="text-slate-100" stroke-width="4" stroke="currentColor" fill="none"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="text-emerald-500" stroke-width="4" stroke-dasharray="65, 100" stroke-linecap="round" stroke="currentColor" fill="none"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="text-amber-400" stroke-width="4" stroke-dasharray="25, 100" stroke-dashoffset="-65" stroke-linecap="round" stroke="currentColor" fill="none"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <text x="18" y="19" class="text-[7px] font-extrabold fill-slate-800" text-anchor="middle">${totalStudents} Siswa</text>
+                <text x="18" y="24" class="text-[3.5px] fill-slate-400" text-anchor="middle">Terpantau</text>
+              </svg>
+            </div>
+
+            <div class="space-y-2 text-xs">
+              <div class="flex items-center justify-between">
+                <span class="flex items-center gap-2 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Tuntas / Hadir</span>
+                <strong class="text-slate-900">${tuntasCount + hadirCount}</strong>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="flex items-center gap-2 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> Perlu Remedial</span>
+                <strong class="text-slate-900">${remedialCount}</strong>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="flex items-center gap-2 text-slate-600"><span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span> Izin / Sakit</span>
+                <strong class="text-slate-900">${izinSakitCount}</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Kolom 3: Aktivitas Terbaru & Pekerjaan Tertunda (4 Kolom) -->
+          <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm flex flex-col justify-between">
+            <div>
+              <h3 class="font-extrabold text-sm text-slate-900 flex items-center gap-2 mb-4">
+                <i data-lucide="clock-4" class="w-4 h-4 text-blue-600"></i>
+                <span>Aktivitas & Pengingat Guru</span>
+              </h3>
+
+              <div class="space-y-3">
+                ${state.teaching_journals.slice(0, 2).map(j => {
+                  const cls = state.classes.find(c => c.id === j.class_id);
+                  return `
+                    <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/70 flex items-start gap-3">
+                      <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
+                        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                      </div>
+                      <div class="text-xs">
+                        <div class="font-bold text-slate-900">Jurnal Mengajar: ${cls ? cls.class_name : 'Kelas'}</div>
+                        <div class="text-slate-500 text-[11px] truncate max-w-[230px]">${j.topic}</div>
+                        <div class="text-[10px] text-slate-400 mt-0.5">Pertemuan ke-${j.meeting_no} • ${j.teaching_date}</div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+
+                ${state.homeroom_records.slice(0, 1).map(h => {
+                  const std = state.students.find(s => s.id === h.student_id);
+                  return `
+                    <div class="p-3 rounded-xl bg-amber-50/70 border border-amber-200/70 flex items-start gap-3">
+                      <div class="w-8 h-8 rounded-lg bg-amber-400/30 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
+                        <i data-lucide="award" class="w-4 h-4"></i>
+                      </div>
+                      <div class="text-xs">
+                        <div class="font-bold text-slate-900">Catatan Wali Kelas (${h.category})</div>
+                        <div class="text-slate-600 text-[11px]">${std ? std.full_name : 'Siswa'} — ${h.record_date}</div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+              <span class="text-[11px] text-slate-500">Butuh bantuan membuat RPP/Soal?</span>
+              <button onclick="window.app.switchTab('ai')" class="text-xs font-extrabold text-blue-700 hover:underline flex items-center gap-1">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i> Tanya Asisten AI
+              </button>
+            </div>
+          </div>
+        </section>
+      `;
+    }
+
+    // ============================================================================
+    // MODUL 2: PERSIAPAN PEMBELAJARAN (KALENDER, PROTA/PROMES, CP, TP, ATP, MODUL AJAR)
+    // ============================================================================
+    function renderPersiapan() {
+      return `
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+          <div>
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full">Alur 1 • Persiapan Mengajar</span>
+            <h3 class="text-lg font-extrabold text-slate-900 mt-1">Perangkat Ajar: Prota, Promes, CP, TP, ATP & Modul Ajar / RPP</h3>
+            <p class="text-xs text-slate-500">Data perangkat ajar yang disimpan di sini dapat langsung dipakai saat mengajar di kelas, membuat LKPD, dan mencetak dokumen resmi.</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button onclick="window.app.switchTab('ai')" class="px-3.5 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs flex items-center gap-1.5">
+              <i data-lucide="sparkles" class="w-4 h-4 text-amber-600"></i>
+              <span>Bantu Susun dengan AI</span>
+            </button>
+            <button onclick="window.app.openCurriculumModal()" class="px-4 py-2.5 rounded-xl bg-[#072B7A] hover:bg-blue-800 text-white font-bold text-xs shadow-md flex items-center gap-1.5">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>Tambah Modul Ajar / RPP</span>
+            </button>
+          </div>
+        </div>
+
+        ${state.curriculum_plans.length === 0 ? `
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-12 text-center">
+            <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3">
+              <i data-lucide="book-open" class="w-6 h-6"></i>
+            </div>
+            <h4 class="font-bold text-slate-800 text-sm">Belum Ada Perangkat Pembelajaran</h4>
+            <p class="text-xs text-slate-500 mt-1 mb-4">Klik tombol "Tambah Modul Ajar / RPP" atau gunakan Asisten AI untuk membuat draf otomatis.</p>
+          </div>
+        ` : `
+          <div class="grid grid-cols-1 gap-4">
+            ${state.curriculum_plans.map(plan => `
+              <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800">${plan.subject_name} • Kelas ${plan.grade_level}</span>
+                      <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-900">Semester ${plan.semester || 'Ganjil'} • ${plan.effective_weeks || 18} Minggu Efektif</span>
+                    </div>
+                    <h4 class="text-base font-extrabold text-slate-900 mt-1.5">${plan.topic_title}</h4>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button onclick="window.app.printCurriculumPlan('${plan.id}')" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5">
+                      <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak RPP/Modul
+                    </button>
+                    <button onclick="window.app.openCurriculumModal('${plan.id}')" class="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs flex items-center gap-1.5">
+                      <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Edit
+                    </button>
+                    <button onclick="window.app.deleteCurriculumPlan('${plan.id}')" class="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600">
+                      <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                  <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/60">
+                    <div class="font-extrabold text-slate-800 mb-1 flex items-center gap-1.5">
+                      <i data-lucide="compass" class="w-3.5 h-3.5 text-blue-600"></i> Capaian Pembelajaran (CP)
+                    </div>
+                    <p class="text-slate-600 leading-relaxed whitespace-pre-line">${plan.cp_text || '-'}</p>
+                  </div>
+
+                  <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/60">
+                    <div class="font-extrabold text-slate-800 mb-1 flex items-center gap-1.5">
+                      <i data-lucide="check-square" class="w-3.5 h-3.5 text-emerald-600"></i> Tujuan Pembelajaran (TP)
+                    </div>
+                    <p class="text-slate-600 leading-relaxed whitespace-pre-line">${plan.tp_text || '-'}</p>
+                  </div>
+
+                  <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/60">
+                    <div class="font-extrabold text-slate-800 mb-1 flex items-center gap-1.5">
+                      <i data-lucide="git-branch" class="w-3.5 h-3.5 text-purple-600"></i> Alur Tujuan (ATP & Prota/Promes)
+                    </div>
+                    <p class="text-slate-600 leading-relaxed whitespace-pre-line">${plan.atp_text || '-'}</p>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs pt-1">
+                  <div class="p-3.5 rounded-xl bg-blue-50/60 border border-blue-200/60">
+                    <div class="font-extrabold text-blue-950 mb-1 flex items-center gap-1.5">
+                      <i data-lucide="presentation" class="w-3.5 h-3.5 text-blue-700"></i> Media, LKPD & Aktivitas Kelompok
+                    </div>
+                    <p class="text-slate-700 leading-relaxed">${plan.lkpd_activity || '-'}</p>
+                  </div>
+
+                  <div class="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200/70">
+                    <div class="font-extrabold text-amber-950 mb-1 flex items-center gap-1.5">
+                      <i data-lucide="smile-plus" class="w-3.5 h-3.5 text-amber-600"></i> Apersepsi & Ice Breaking Kelas
+                    </div>
+                    <p class="text-slate-700 leading-relaxed">${plan.ice_breaking || '-'}</p>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `}
+      `;
+    }
+
+    // ============================================================================
+    // MODUL 3: KELAS SAYA (JADWAL, PRESENSI HARIAN & JURNAL MENGAJAR)
+    // ============================================================================
+    function renderKelas() {
+      const selectedClass = state.classes.find(c => c.id === state.selectedClassId) || state.classes[0];
+      const currentClassId = selectedClass ? selectedClass.id : '';
+      const classStudents = state.students.filter(s => s.class_id === currentClassId);
+      const classJournals = state.teaching_journals.filter(j => j.class_id === currentClassId);
+
+      return `
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+          <div>
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">Alur 2 • Pelaksanaan di Kelas</span>
+            <h3 class="text-lg font-extrabold text-slate-900 mt-1">Kelas Saya: Presensi Siswa & Jurnal Mengajar</h3>
+            <p class="text-xs text-slate-500">Pilih kelas aktif, catat kehadiran siswa, dan simpan jurnal mengajar harian.</p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <select onchange="window.app.selectClass(this.value)" class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50">
+              ${state.classes.length === 0 ? `<option value="">Belum Ada Kelas</option>` : state.classes.map(c => `
+                <option value="${c.id}" ${c.id === currentClassId ? 'selected' : ''}>${c.class_name} (${c.schedule_day || ''})</option>
+              `).join('')}
+            </select>
+
+            <button onclick="window.app.openJournalModal('${currentClassId}')" class="px-4 py-2.5 rounded-xl bg-[#072B7A] hover:bg-blue-800 text-white font-bold text-xs shadow-md flex items-center gap-1.5">
+              <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+              <span>Input Presensi & Jurnal Baru</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <!-- Daftar Siswa & Status Kehadiran di Kelas Ini (5 Kolom) -->
+          <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                <i data-lucide="users" class="w-4 h-4 text-blue-600"></i>
+                <span>Daftar Siswa ${selectedClass ? selectedClass.class_name : ''} (${classStudents.length})</span>
+              </h4>
+              <button onclick="window.app.switchTab('master')" class="text-[11px] font-bold text-blue-600 hover:underline">+ Kelola Siswa</button>
+            </div>
+
+            ${classStudents.length === 0 ? `
+              <div class="py-8 text-center text-xs text-slate-400">Belum ada siswa di kelas ini.</div>
+            ` : `
+              <div class="divide-y divide-slate-100">
+                ${classStudents.map((s, idx) => {
+                  const stdAtt = state.attendances.filter(a => a.student_id === s.id);
+                  const hadir = stdAtt.filter(a => a.status === 'Hadir').length;
+                  return `
+                    <div class="py-2.5 flex items-center justify-between text-xs">
+                      <div class="flex items-center gap-2.5">
+                        <span class="w-6 h-6 rounded-lg bg-slate-100 text-slate-700 font-bold flex items-center justify-center text-[11px]">${idx + 1}</span>
+                        <div>
+                          <div class="font-bold text-slate-900">${s.full_name}</div>
+                          <div class="text-[10px] text-slate-400">NISN: ${s.nisn} • L/P: ${s.gender}</div>
+                        </div>
+                      </div>
+                      <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700">Hadir: ${hadir}x</span>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            `}
+          </div>
+
+          <!-- Riwayat Jurnal Mengajar & Presensi Kelas (7 Kolom) -->
+          <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                <i data-lucide="book-marked" class="w-4 h-4 text-blue-600"></i>
+                <span>Riwayat Jurnal Mengajar & Rekap Presensi</span>
+              </h4>
+              <button onclick="window.app.printJournalReport('${currentClassId}')" class="text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak Jurnal
+              </button>
+            </div>
+
+            ${classJournals.length === 0 ? `
+              <div class="py-10 text-center text-xs text-slate-400">Belum ada jurnal mengajar untuk kelas ini. Klik "Input Presensi & Jurnal Baru".</div>
+            ` : `
+              <div class="space-y-3">
+                ${classJournals.map(j => `
+                  <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-2">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#072B7A] text-white">Pertemuan Ke-${j.meeting_no}</span>
+                        <span class="text-xs font-bold text-slate-600">${j.teaching_date}</span>
+                      </div>
+                      <button onclick="window.app.deleteJournal('${j.id}')" class="text-rose-500 hover:text-rose-700 p-1">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                      </button>
+                    </div>
+                    <h5 class="font-extrabold text-sm text-slate-900">${j.topic}</h5>
+                    <p class="text-xs text-slate-600"><strong>Kegiatan Kelas:</strong> ${j.activities_notes || '-'}</p>
+                    <p class="text-xs text-slate-600"><strong>Refleksi & Tindak Lanjut:</strong> ${j.reflection || '-'}</p>
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    // ============================================================================
+    // MODUL 4: ASESMEN & BANK SOAL (KISI-KISI, BUTIR SOAL BERURUTAN, KUNCI & CETAK)
+    // ============================================================================
+    function renderAsesmen() {
+      return `
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+          <div>
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full">Alur 3 • Penilaian & Evaluasi</span>
+            <h3 class="text-lg font-extrabold text-slate-900 mt-1">Asesmen & Bank Soal Terstruktur</h3>
+            <p class="text-xs text-slate-500">Susun paket soal lengkap dengan kisi-kisi, opsi jawaban, kunci, dan bobot nilai yang langsung terhubung ke menu Olah Nilai.</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button onclick="window.app.openAssessmentModal()" class="px-4 py-2.5 rounded-xl bg-[#072B7A] hover:bg-blue-800 text-white font-bold text-xs shadow-md flex items-center gap-1.5">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span>Buat Paket Asesmen Baru</span>
+            </button>
+          </div>
+        </div>
+
+        ${state.assessments.length === 0 ? `
+          <div class="bg-white rounded-2xl border border-slate-200/80 p-12 text-center text-xs text-slate-400">
+            Belum ada paket asesmen. Klik "Buat Paket Asesmen Baru" untuk mulai menyusun soal.
+          </div>
+        ` : `
+          <div class="space-y-4">
+            ${state.assessments.map(asm => {
+              const cls = state.classes.find(c => c.id === asm.class_id);
+              const qList = Array.isArray(asm.questions_data) ? asm.questions_data : [];
+              return `
+                <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4">
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-100 text-purple-900">${asm.assessment_type}</span>
+                        <span class="text-xs font-bold text-slate-500">${cls ? cls.class_name : 'Semua Kelas'} • KKTP/KKM: ${asm.kkm_target}</span>
+                      </div>
+                      <h4 class="font-extrabold text-base text-slate-900 mt-1">${asm.title}</h4>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                      <button onclick="window.app.openQuestionModal('${asm.id}')" class="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs flex items-center gap-1.5">
+                        <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> Tambah Butir Soal
+                      </button>
+                      <button onclick="window.app.printAssessment('${asm.id}')" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5">
+                        <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak Naskah & Kunci
+                      </button>
+                      <button onclick="window.app.deleteAssessment('${asm.id}')" class="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  ${qList.length === 0 ? `
+                    <div class="text-xs text-slate-400 py-4 text-center">Belum ada butir soal dalam paket ini.</div>
+                  ` : `
+                    <div class="space-y-2.5">
+                      ${qList.map((q, idx) => `
+                        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-xs space-y-1.5">
+                          <div class="flex items-center justify-between">
+                            <span class="font-extrabold text-blue-900">Soal No. ${idx + 1} (${q.type}) — Bobot: ${q.score_weight} Poin</span>
+                            <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">Kunci: ${q.answer_key}</span>
+                          </div>
+                          <div class="text-[11px] text-slate-500 italic">Indikator Kisi-kisi: ${q.indicator || '-'}</div>
+                          <div class="font-semibold text-slate-900">${q.question}</div>
+                          ${q.options && q.options.length > 0 ? `
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1 pt-1 text-slate-600">
+                              ${q.options.map(opt => `<div>${opt}</div>`).join('')}
+                            </div>
+                          ` : ''}
+                        </div>
+                      `).join('')}
+                    </div>
+                  `}
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `}
+      `;
+    }
+
+    // ============================================================================
+    // MODUL 5: NILAI & TINDAK LANJUT (OLAH NILAI OTOMATIS, REMEDIAL & EKSPOR CSV/EXCEL)
+    // ============================================================================
+    function renderNilai() {
+      const selectedAsm = state.assessments.find(a => a.id === state.selectedAssessmentId) || state.assessments[0];
+      const asmId = selectedAsm ? selectedAsm.id : '';
+      const kkm = selectedAsm ? Number(selectedAsm.kkm_target || 75) : 75;
+      const targetStudents = selectedAsm
+        ? state.students.filter(s => !selectedAsm.class_id || s.class_id === selectedAsm.class_id)
+        : state.students;
+
+      return `
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+          <div>
+            <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100 px-2.5 py-1 rounded-full">Alur 4 • Pengolahan Nilai & Tindak Lanjut</span>
+            <h3 class="text-lg font-extrabold text-slate-900 mt-1">Rekap Nilai, Analisis KKTP & Catatan Remedial</h3>
+            <p class="text-xs text-slate-500">Sistem menghitung nilai akhir secara otomatis berdasarkan batas KKTP (${kkm}) dan memetakan status ketuntasan siswa.</p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <select onchange="window.app.selectAssessment(this.value)" class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50">
+              ${state.assessments.length === 0 ? `<option value="">Belum Ada Asesmen</option>` : state.assessments.map(a => `
+                <option value="${a.id}" ${a.id === asmId ? 'selected' : ''}>${a.title} (KKTP ${a.kkm_target})</option>
+              `).join('')}
+            </select>
+
+            <button onclick="window.app.exportGradesCSV('${asmId}')" class="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+              <span>Ekspor Excel (CSV)</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm overflow-x-auto">
+          ${!selectedAsm || targetStudents.length === 0 ? `
+            <div class="py-10 text-center text-xs text-slate-400">Pilih asesmen dan pastikan kelas memiliki daftar siswa.</div>
+          ` : `
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="border-b border-slate-200 text-slate-500 uppercase text-[11px]">
+                  <th class="py-3 px-3">No</th>
+                  <th class="py-3 px-3">Nama Siswa</th>
+                  <th class="py-3 px-3">Nilai Awal</th>
+                  <th class="py-3 px-3">Nilai Remedial</th>
+                  <th class="py-3 px-3">Nilai Akhir</th>
+                  <th class="py-3 px-3">Status KKTP (${kkm})</th>
+                  <th class="py-3 px-3">Catatan / Umpan Balik Guru</th>
+                  <th class="py-3 px-3 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${targetStudents.map((std, i) => {
+                  const g = state.grades.find(x => x.assessment_id === asmId && x.student_id === std.id);
+                  const raw = g ? g.raw_score : '-';
+                  const rem = g && g.remedial_score !== null ? g.remedial_score : '-';
+                  const fin = g ? g.final_score : '-';
+                  const isRemedial = g ? g.needs_remedial : false;
+
+                  return `
+                    <tr class="hover:bg-slate-50/80">
+                      <td class="py-3 px-3 font-bold text-slate-500">${i + 1}</td>
+                      <td class="py-3 px-3 font-bold text-slate-900">${std.full_name}<div class="text-[10px] text-slate-400 font-normal">NISN: ${std.nisn}</div></td>
+                      <td class="py-3 px-3 font-bold">${raw}</td>
+                      <td class="py-3 px-3 font-bold text-amber-700">${rem}</td>
+                      <td class="py-3 px-3 font-extrabold text-blue-900 text-sm">${fin}</td>
+                      <td class="py-3 px-3">
+                        ${!g ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-500 font-semibold">Belum Diinput</span>`
+                          : isRemedial
+                            ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-900 font-bold">Remedial → ${fin >= kkm ? 'Tuntas' : 'Perlu Bimbingan'}</span>`
+                            : `<span class="px-2.5 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-bold">Tuntas Murni</span>`
+                        }
+                      </td>
+                      <td class="py-3 px-3 text-slate-600 max-w-xs">${g?.teacher_feedback || '-'}</td>
+                      <td class="py-3 px-3 text-right">
+                        <button onclick="window.app.openGradeModal('${asmId}', '${std.id}')"
+                          class="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs">
+                          Input / Edit Nilai
+                        </button>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          `}
+        </div>
+      `;
+    }
+
+    // ============================================================================
+    // MODUL 6: ADMINISTRASI, ASISTEN WALI KELAS & PENGEMBANGAN KOMPETENSI GURU
+    // ============================================================================
+    function renderWaliKelas() {
+      return `
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <!-- Kiri: Asisten Wali Kelas (Pembinaan, Prestasi & Draf WA Orang Tua) (7 Kolom) -->
+          <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full">Asisten Wali Kelas</span>
+                <h3 class="text-base font-extrabold text-slate-900 mt-1">Catatan Pembinaan, Prestasi & Komunikasi Orang Tua</h3>
+              </div>
+              <button onclick="window.app.openHomeroomModal()" class="px-3.5 py-2 rounded-xl bg-[#072B7A] hover:bg-blue-800 text-white font-bold text-xs flex items-center gap-1.5">
+                <i data-lucide="plus" class="w-4 h-4"></i> Catatan Baru
+              </button>
+            </div>
+
+            ${state.homeroom_records.length === 0 ? `
+              <div class="py-8 text-center text-xs text-slate-400">Belum ada catatan wali kelas.</div>
+            ` : `
+              <div class="space-y-3">
+                ${state.homeroom_records.map(rec => {
+                  const std = state.students.find(s => s.id === rec.student_id);
+                  return `
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-2 text-xs">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-900">${rec.category}</span>
+                          <strong class="text-slate-900">${std ? std.full_name : 'Siswa'}</strong>
+                          <span class="text-slate-400">• ${rec.record_date}</span>
+                        </div>
+                        <button onclick="window.app.deleteHomeroom('${rec.id}')" class="text-rose-500 hover:text-rose-700">
+                          <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                      </div>
+                      <p class="text-slate-700">${rec.details}</p>
+                      <div class="p-3 rounded-xl bg-white border border-slate-200/80 flex items-center justify-between gap-2">
+                        <div class="text-[11px] text-slate-600 italic flex-1">"${rec.parent_contact_note || '-'}"</div>
+                        <button onclick="window.app.copyText('${(rec.parent_contact_note || '').replace(/'/g, "\\'")}')"
+                          class="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-[11px] shrink-0 flex items-center gap-1">
+                          <i data-lucide="copy" class="w-3 h-3"></i> Salin Pesan Ortu
+                        </button>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            `}
+          </div>
+
+          <!-- Kanan: Pengembangan Kompetensi Guru & Portofolio (5 Kolom) -->
+          <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-[10px] font-extrabold uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full">Pengembangan Kompetensi</span>
+                <h3 class="text-base font-extrabold text-slate-900 mt-1">Portofolio, Refleksi & Sertifikat Guru</h3>
+              </div>
+              <button onclick="window.app.openPortfolioModal()" class="px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs flex items-center gap-1">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Tambah
+              </button>
+            </div>
+
+            ${state.teacher_portfolios.length === 0 ? `
+              <div class="py-8 text-center text-xs text-slate-400">Belum ada portofolio atau sertifikat tersimpan.</div>
+            ` : `
+              <div class="space-y-3">
+                ${state.teacher_portfolios.map(p => `
+                  <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-1.5 text-xs">
+                    <div class="flex items-center justify-between">
+                      <span class="px-2 py-0.5 rounded-md bg-blue-100 text-blue-900 font-bold text-[10px]">${p.category}</span>
+                      <button onclick="window.app.deletePortfolio('${p.id}')" class="text-rose-500 hover:text-rose-700">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                      </button>
+                    </div>
+                    <h4 class="font-extrabold text-slate-900">${p.title}</h4>
+                    <div class="text-[11px] text-slate-500">${p.organizer} • ${p.date_achieved}</div>
+                    <p class="text-[11px] text-slate-600 pt-1 border-t border-slate-200/60"><strong>Refleksi:</strong> ${p.reflection_notes || '-'}</p>
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    // ============================================================================
+    // MODUL 7: ASISTEN AI GURU (GENERATOR DRAF RPP, LKPD, ICE BREAKING & BUTIR SOAL)
+    // ============================================================================
+    function renderAsistenAI() {
+      const t = state.teacher || {};
+      return `
+        <div class="bg-gradient-to-r from-[#003893] via-[#08337E] to-[#051C50] rounded-3xl p-6 text-white shadow-lg">
+          <div class="flex items-center gap-2 text-amber-300 text-xs font-extrabold uppercase tracking-wider mb-1">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+            <span>Asisten AI Kontekstual Guru</span>
+          </div>
+          <h3 class="text-xl font-extrabold">Generator Pintar Perangkat Ajar, LKPD & Soal</h3>
+          <p class="text-xs text-blue-100 mt-1 max-w-2xl">
+            Masukkan topik atau materi pembelajaran. Draf yang dihasilkan AI dapat langsung Anda periksa, edit, dan simpan ke Modul Persiapan Ajar atau Bank Soal.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <!-- Parameter Konteks Guru -->
+          <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4">
+            <h4 class="font-extrabold text-sm text-slate-900">1. Konteks Materi Pembelajaran</h4>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Mata Pelajaran & Jenjang Kelas</label>
+              <input id="ai-subject" type="text" value="${t.subject_name || 'Informatika'} - Kelas 9"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Topik / Materi Pokok</label>
+              <input id="ai-topic" type="text" placeholder="Contoh: Keamanan Data & Literasi Digital" value="Berpikir Komputasional & Struktur Data"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Jenis Bantuan Draf</label>
+              <select id="ai-mode" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold bg-slate-50">
+                <option value="rpp">Draf CP, TP, ATP, LKPD & Ice Breaking Lengkap</option>
+                <option value="soal">Draf Kisi-kisi & 3 Butir Soal Pilihan Ganda + Uraian</option>
+                <option value="ortu">Draf Surat / Pesan Komunikasi Pembinaan ke Orang Tua</option>
+              </select>
+            </div>
+
+            <button type="button" onclick="window.app.generateAIDraft()"
+              class="w-full py-3 rounded-xl bg-[#FBBF24] hover:bg-amber-300 text-slate-950 font-extrabold text-xs shadow-md flex items-center justify-center gap-2 transition">
+              <i data-lucide="wand-2" class="w-4 h-4"></i>
+              <span>Buat Draf Sekarang</span>
+            </button>
+          </div>
+
+          <!-- Editor Hasil Draf AI (Bisa diedit & disimpan langsung ke tabel) -->
+          <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm flex flex-col justify-between space-y-4">
+            <div class="flex items-center justify-between">
+              <h4 class="font-extrabold text-sm text-slate-900">2. Periksa & Edit Draf Guru</h4>
+              <span class="text-[11px] text-slate-400">Dapat diedit bebas sebelum disimpan</span>
+            </div>
+
+            <textarea id="ai-output-editor" rows="11"
+              placeholder="Hasil draf dari Asisten AI akan tampil di sini dan siap Anda sesuaikan..."
+              class="w-full p-4 rounded-2xl border border-slate-200 text-xs text-slate-800 leading-relaxed font-mono bg-slate-50 focus:bg-white outline-none focus:border-blue-600"></textarea>
+
+            <div class="flex flex-wrap items-center justify-end gap-2">
+              <button type="button" onclick="window.app.copyAIOutput()" class="px-3.5 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 flex items-center gap-1.5">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i> Salin Teks
+              </button>
+              <button type="button" onclick="window.app.saveAIToCurriculum()" class="px-4 py-2 rounded-xl bg-[#072B7A] hover:bg-blue-800 text-white font-bold text-xs shadow-md flex items-center gap-1.5">
+                <i data-lucide="save" class="w-3.5 h-3.5"></i> Simpan ke Modul Persiapan Ajar
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ============================================================================
+    // MODUL 8: PROFIL SEKOLAH & DATA MASTER (IDENTITAS, KELAS, DAN ROSTER SISWA)
+    // ============================================================================
+    function renderMaster() {
+      const t = state.teacher || {};
+      return `
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <!-- Form Identitas Sekolah & Guru (5 Kolom) -->
+          <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4">
+            <div>
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full">Data Induk</span>
+              <h3 class="text-base font-extrabold text-slate-900 mt-1">Identitas Sekolah & Profil Guru</h3>
+              <p class="text-[11px] text-slate-500">Digunakan otomatis untuk Kop Dokumen RPP, Jurnal, dan Laporan Nilai.</p>
+            </div>
+
+            <form id="form-master-profile" onsubmit="window.app.saveProfile(event)" class="space-y-3 text-xs">
+              <div>
+                <label class="font-bold text-slate-700 block mb-1">Nama Lengkap Guru & Gelar</label>
+                <input name="full_name" required value="${t.full_name || ''}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+              <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label class="font-bold text-slate-700 block mb-1">NIP / NIY</label>
+                  <input name="nip" value="${t.nip || ''}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+                </div>
+                <div>
+                  <label class="font-bold text-slate-700 block mb-1">Mata Pelajaran Utama</label>
+                  <input name="subject_name" value="${t.subject_name || ''}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+                </div>
+              </div>
+              <div>
+                <label class="font-bold text-slate-700 block mb-1">Nama Satuan Pendidikan / Sekolah</label>
+                <input name="school_name" required value="${t.school_name || ''}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+              <div>
+                <label class="font-bold text-slate-700 block mb-1">Alamat Sekolah (Untuk Kop Surat)</label>
+                <input name="school_address" value="${t.school_address || ''}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+              <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label class="font-bold text-slate-700 block mb-1">Nama Kepala Sekolah</label>
+                  <input name="principal_name" value="${t.principal_name || ''}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+                </div>
+                <div>
+                  <label class="font-bold text-slate-700 block mb-1">NIP Kepala Sekolah</label>
+                  <input name="principal_nip" value="${t.principal_nip || ''}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label class="font-bold text-slate-700 block mb-1">Tahun Ajaran Aktif</label>
+                  <input name="academic_year" value="${t.academic_year || '2026/2027'}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+                </div>
+                <div>
+                  <label class="font-bold text-slate-700 block mb-1">Semester</label>
+                  <select name="semester" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white">
+                    <option value="Ganjil" ${t.semester === 'Ganjil' ? 'selected' : ''}>Ganjil</option>
+                    <option value="Genap" ${t.semester === 'Genap' ? 'selected' : ''}>Genap</option>
+                  </select>
+                </div>
+              </div>
+
+              <button type="submit" class="w-full py-2.5 rounded-xl bg-[#072B7A] hover:bg-blue-800 text-white font-bold shadow-md">
+                Simpan Identitas & Profil
+              </button>
+            </form>
+          </div>
+
+          <!-- Manajemen Kelas & Roster Siswa (7 Kolom) -->
+          <div class="lg:col-span-7 space-y-5">
+            <!-- Daftar Kelas -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-3">
+              <div class="flex items-center justify-between">
+                <h4 class="font-extrabold text-sm text-slate-900">Master Kelas & Jadwal Mengajar (${state.classes.length})</h4>
+                <button onclick="window.app.openClassModal()" class="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs flex items-center gap-1">
+                  <i data-lucide="plus" class="w-3.5 h-3.5"></i> Tambah Kelas
+                </button>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                ${state.classes.map(c => `
+                  <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/70 flex items-center justify-between text-xs">
+                    <div>
+                      <div class="font-extrabold text-slate-900">${c.class_name} (Tingkat ${c.grade_level})</div>
+                      <div class="text-[11px] text-slate-500">${c.schedule_day || '-'} • ${c.schedule_time || '-'} • ${c.room || '-'}</div>
+                    </div>
+                    <button onclick="window.app.deleteClass('${c.id}')" class="text-rose-500 hover:text-rose-700 p-1">
+                      <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Daftar Siswa + Impor Cepat -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-3">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h4 class="font-extrabold text-sm text-slate-900">Data Induk Siswa (${state.students.length} Siswa)</h4>
+                <div class="flex items-center gap-2">
+                  <button onclick="window.app.openBulkStudentModal()" class="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs flex items-center gap-1">
+                    <i data-lucide="upload" class="w-3.5 h-3.5"></i> Impor Cepat (CSV/Teks)
+                  </button>
+                  <button onclick="window.app.openStudentModal()" class="px-3 py-1.5 rounded-xl bg-[#072B7A] hover:bg-blue-800 text-white font-bold text-xs flex items-center gap-1">
+                    <i data-lucide="user-plus" class="w-3.5 h-3.5"></i> Tambah Siswa
+                  </button>
+                </div>
+              </div>
+
+              <div class="max-h-64 overflow-y-auto custom-scroll divide-y divide-slate-100 text-xs">
+                ${state.students.map(s => {
+                  const cls = state.classes.find(c => c.id === s.class_id);
+                  return `
+                    <div class="py-2.5 flex items-center justify-between">
+                      <div>
+                        <span class="font-bold text-slate-900">${s.full_name}</span>
+                        <span class="text-slate-400 ml-1">(${s.gender}) • NISN: ${s.nisn}</span>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold text-[10px]">${cls ? cls.class_name : '-'}</span>
+                        <button onclick="window.app.deleteStudent('${s.id}')" class="text-rose-500 hover:text-rose-700">
+                          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ============================================================================
+    // RENDERER UTAMA MODUL AKTIF
+    // ============================================================================
+    function renderActiveModule() {
+      const container = document.getElementById('module-content');
+      const map = {
+        dashboard: renderDashboard,
+        persiapan: renderPersiapan,
+        kelas: renderKelas,
+        asesmen: renderAsesmen,
+        nilai: renderNilai,
+        walikelas: renderWaliKelas,
+        ai: renderAsistenAI,
+        master: renderMaster
+      };
+      container.innerHTML = (map[state.activeTab] || renderDashboard)();
+      lucide.createIcons();
+    }
+
+    // ============================================================================
+    // FUNGSI-FUNGSI CRUD & INTERAKSI FORMULIR (PREVIEW & SUPABASE REAL)
+    // ============================================================================
+    window.app = {
+      switchTab,
+      closeModal,
+
+      selectClass(classId) {
+        state.selectedClassId = classId;
+        renderActiveModule();
+      },
+
+      selectAssessment(asmId) {
+        state.selectedAssessmentId = asmId;
+        renderActiveModule();
+      },
+
+      openMobileMoreMenu() {
+        openModal('Menu Lengkap AsGURU', `
+          <div class="grid grid-cols-1 gap-2">
+            ${NAV_ITEMS.map(item => `
+              <button onclick="window.app.switchTab('${item.id}'); window.app.closeModal();"
+                class="w-full p-3.5 rounded-2xl border border-slate-200 flex items-center gap-3 text-left hover:bg-slate-50">
+                <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center shrink-0">
+                  <i data-lucide="${item.icon}" class="w-4 h-4"></i>
+                </div>
+                <div>
+                  <div class="font-extrabold text-xs text-slate-900">${item.label}</div>
+                  <div class="text-[11px] text-slate-500">${item.subtitle}</div>
+                </div>
+              </button>
+            `).join('')}
+          </div>
+        `);
+      },
+
+      // ----------------- CRUD PROFIL & IDENTITAS SEKOLAH -----------------
+      async saveProfile(e) {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const payload = Object.fromEntries(fd.entries());
+        state.teacher = { ...state.teacher, ...payload };
+
+        if (IS_PREVIEW) {
+          savePreviewData();
+          updateShellHeader();
+          showToast('Profil guru & sekolah berhasil diperbarui!');
+        } else {
+          try {
+            const { error } = await supabase.from('teachers').upsert({
+              id: state.user.id,
+              ...payload
+            });
+            if (error) throw error;
+            updateShellHeader();
+            showToast('Profil tersimpan ke database Supabase!');
+          } catch (err) {
+            showToast('Gagal menyimpan profil: ' + err.message, 'error');
+          }
+        }
+      },
+
+      // ----------------- CRUD KELAS -----------------
+      openClassModal() {
+        openModal('Tambah Kelas & Jadwal Mengajar', `
+          <form onsubmit="window.app.saveClass(event)" class="space-y-3 text-xs">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="font-bold block mb-1">Nama Kelas</label>
+                <input name="class_name" required placeholder="Contoh: Kelas 9C" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+              <div>
+                <label class="font-bold block mb-1">Tingkat Kelas</label>
+                <input name="grade_level" type="number" required value="9" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+              <div>
+                <label class="font-bold block mb-1">Hari Mengajar</label>
+                <input name="schedule_day" placeholder="Selasa" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+              <div>
+                <label class="font-bold block mb-1">Jam Pelajaran</label>
+                <input name="schedule_time" placeholder="07:30 - 09:00" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+              <div>
+                <label class="font-bold block mb-1">Ruang / Lab</label>
+                <input name="room" placeholder="R. 9C" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-[#072B7A] text-white font-bold">Simpan Kelas</button>
+          </form>
+        `);
+      },
+
+      async saveClass(e) {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const item = {
+          id: crypto.randomUUID(),
+          class_name: fd.get('class_name'),
+          grade_level: Number(fd.get('grade_level') || 9),
+          schedule_day: fd.get('schedule_day'),
+          schedule_time: fd.get('schedule_time'),
+          room: fd.get('room')
+        };
+
+        if (IS_PREVIEW) {
+          state.classes.push(item);
+          state.selectedClassId = item.id;
+          savePreviewData();
+          closeModal();
+          renderActiveModule();
+          showToast('Kelas baru berhasil ditambahkan!');
+        } else {
+          try {
+            const { data, error } = await supabase.from('classes').insert({
+              ...item,
+              teacher_id: state.user.id
+            }).select().single();
+            if (error) throw error;
+            state.classes.push(data);
+            state.selectedClassId = data.id;
+            closeModal();
+            renderActiveModule();
+            showToast('Kelas tersimpan di Supabase!');
+          } catch (err) {
+            showToast(err.message, 'error');
+          }
+        }
+      },
+
+      deleteClass(id) {
+        askConfirm('Hapus Kelas?', 'Data kelas ini akan dihapus dari daftar.', async () => {
+          if (IS_PREVIEW) {
+            state.classes = state.classes.filter(c => c.id !== id);
+            savePreviewData();
+            renderActiveModule();
+            showToast('Kelas dihapus.');
+          } else {
+            await supabase.from('classes').delete().eq('id', id);
+            state.classes = state.classes.filter(c => c.id !== id);
+            renderActiveModule();
+            showToast('Kelas dihapus dari Supabase.');
+          }
+        });
+      },
+
+      // ----------------- CRUD SISWA & IMPOR MASSAL -----------------
+      openStudentModal() {
+        openModal('Tambah Data Siswa', `
+          <form onsubmit="window.app.saveStudent(event)" class="space-y-3 text-xs">
+            <div>
+              <label class="font-bold block mb-1">Pilih Kelas</label>
+              <select name="class_id" required class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white">
+                ${state.classes.map(c => `<option value="${c.id}">${c.class_name}</option>`).join('')}
+              </select>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="font-bold block mb-1">NISN</label>
+                <input name="nisn" required placeholder="0091827xxx" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+              <div>
+                <label class="font-bold block mb-1">Jenis Kelamin</label>
+                <select name="gender" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white">
+                  <option value="L">Laki-laki (L)</option>
+                  <option value="P">Perempuan (P)</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="font-bold block mb-1">Nama Lengkap Siswa</label>
+              <input name="full_name" required placeholder="Nama Lengkap Sesuai Absen" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-[#072B7A] text-white font-bold">Simpan Siswa</button>
+          </form>
+        `);
+      },
+
+      async saveStudent(e) {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const item = {
+          id: crypto.randomUUID(),
+          class_id: fd.get('class_id'),
+          nisn: fd.get('nisn'),
+          full_name: fd.get('full_name'),
+          gender: fd.get('gender')
+        };
+
+        if (IS_PREVIEW) {
+          state.students.push(item);
+          savePreviewData();
+          closeModal();
+          renderActiveModule();
+          showToast('Siswa berhasil ditambahkan!');
+        } else {
+          try {
+            const { data, error } = await supabase.from('students').insert({
+              ...item,
+              teacher_id: state.user.id
+            }).select().single();
+            if (error) throw error;
+            state.students.push(data);
+            closeModal();
+            renderActiveModule();
+            showToast('Siswa tersimpan ke Supabase!');
+          } catch (err) {
+            showToast(err.message, 'error');
+          }
+        }
+      },
+
+      openBulkStudentModal() {
+        openModal('Impor Cepat Daftar Siswa (Copy-Paste dari Excel)', `
+          <form onsubmit="window.app.saveBulkStudents(event)" class="space-y-3 text-xs">
+            <div>
+              <label class="font-bold block mb-1">Target Kelas</label>
+              <select name="class_id" required class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white">
+                ${state.classes.map(c => `<option value="${c.id}">${c.class_name}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="font-bold block mb-1">Tempel Data Siswa (Format per baris: <code class="bg-slate-100 px-1">NISN, Nama Lengkap, L/P</code>)</label>
+              <textarea name="raw_lines" rows="6" required placeholder="009112233, Ahmad Fauzi, L&#10;009112234, Siti Rahmawati, P"
+                class="w-full p-3 rounded-xl border border-slate-200 font-mono text-xs"></textarea>
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-bold">Proses Impor Siswa</button>
+          </form>
+        `);
+      },
+
+      async saveBulkStudents(e) {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const class_id = fd.get('class_id');
+        const lines = String(fd.get('raw_lines') || '').split('\n').map(l => l.trim()).filter(Boolean);
+
+        const newItems = lines.map(line => {
+          const parts = line.split(/[,\t;]/).map(s => s.trim());
+          return {
+            id: crypto.randomUUID(),
+            class_id,
+            nisn: parts[0] || String(Math.floor(1000000000 + Math.random() * 900000000)),
+            full_name: parts[1] || parts[0] || 'Siswa',
+            gender: (parts[2] || 'L').toUpperCase().startsWith('P') ? 'P' : 'L'
+          };
+        });
+
+        if (IS_PREVIEW) {
+          state.students.push(...newItems);
+          savePreviewData();
+          closeModal();
+          renderActiveModule();
+          showToast(`${newItems.length} siswa berhasil diimpor!`);
+        } else {
+          try {
+            const rows = newItems.map(x => ({ ...x, teacher_id: state.user.id }));
+            const { data, error } = await supabase.from('students').insert(rows).select();
+            if (error) throw error;
+            state.students.push(...(data || []));
+            closeModal();
+            renderActiveModule();
+            showToast(`${newItems.length} siswa berhasil diimpor ke Supabase!`);
+          } catch (err) {
+            showToast(err.message, 'error');
+          }
+        }
+      },
+
+      deleteStudent(id) {
+        askConfirm('Hapus Siswa?', 'Data siswa ini akan dihapus dari daftar kelas.', async () => {
+          if (IS_PREVIEW) {
+            state.students = state.students.filter(s => s.id !== id);
+            savePreviewData();
+            renderActiveModule();
+            showToast('Data siswa dihapus.');
+          } else {
+            await supabase.from('students').delete().eq('id', id);
+            state.students = state.students.filter(s => s.id !== id);
+            renderActiveModule();
+            showToast('Data siswa dihapus.');
+          }
+        });
+      },
+
+      // ----------------- CRUD PERSIAPAN PEMBELAJARAN (MODUL AJAR / RPP) -----------------
+      openCurriculumModal(editId = null) {
+        const existing = state.curriculum_plans.find(p => p.id === editId) || {};
+        openModal(editId ? 'Edit Modul Ajar / RPP' : 'Susun Modul Ajar / RPP Baru', `
+          <form onsubmit="window.app.saveCurriculumPlan(event, '${editId || ''}')" class="space-y-3 text-xs">
+            <div class="grid grid-cols-3 gap-2.5">
+              <div>
+                <label class="font-bold block mb-1">Mata Pelajaran</label>
+                <input name="subject_name" required value="${existing.subject_name || state.teacher?.subject_name || 'Informatika'}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+              <div>
+                <label class="font-bold block mb-1">Tingkat Kelas</label>
+                <input name="grade_level" type="number" required value="${existing.grade_level || 9}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+              <div>
+                <label class="font-bold block mb-1">Minggu Efektif</label>
+                <input name="effective_weeks" type="number" required value="${existing.effective_weeks || 18}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+            </div>
+            <div>
+              <label class="font-bold block mb-1">Topik / Materi Pokok Modul Ajar</label>
+              <input name="topic_title" required value="${existing.topic_title || ''}" placeholder="Contoh: Algoritma & Pemrograman Dasar" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+            </div>
+            <div>
+              <label class="font-bold block mb-1">Capaian Pembelajaran (CP)</label>
+              <textarea name="cp_text" rows="2" required class="w-full p-2.5 rounded-xl border border-slate-200">${existing.cp_text || ''}</textarea>
+            </div>
+            <div>
+              <label class="font-bold block mb-1">Tujuan Pembelajaran (TP)</label>
+              <textarea name="tp_text" rows="2" required class="w-full p-2.5 rounded-xl border border-slate-200">${existing.tp_text || ''}</textarea>
+            </div>
+            <div>
+              <label class="font-bold block mb-1">Alur Tujuan Pembelajaran (ATP) & Distribusi Prota/Promes</label>
+              <textarea name="atp_text" rows="2" class="w-full p-2.5 rounded-xl border border-slate-200">${existing.atp_text || ''}</textarea>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label class="font-bold block mb-1">Rancangan LKPD & Aktivitas Kelompok</label>
+                <textarea name="lkpd_activity" rows="2" class="w-full p-2.5 rounded-xl border border-slate-200">${existing.lkpd_activity || ''}</textarea>
+              </div>
+              <div>
+                <label class="font-bold block mb-1">Ide Ice Breaking & Apersepsi</label>
+                <textarea name="ice_breaking" rows="2" class="w-full p-2.5 rounded-xl border border-slate-200">${existing.ice_breaking || ''}</textarea>
+              </div>
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-[#072B7A] text-white font-bold">Simpan Perangkat Pembelajaran</button>
+          </form>
+        `);
+      },
+
+      async saveCurriculumPlan(e, editId) {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const payload = {
+          id: editId || crypto.randomUUID(),
+          subject_name: fd.get('subject_name'),
+          grade_level: Number(fd.get('grade_level') || 9),
+          semester: state.teacher?.semester || 'Ganjil',
+          effective_weeks: Number(fd.get('effective_weeks') || 18),
+          topic_title: fd.get('topic_title'),
+          cp_text: fd.get('cp_text'),
+          tp_text: fd.get('tp_text'),
+          atp_text: fd.get('atp_text'),
+          lkpd_activity: fd.get('lkpd_activity'),
+          ice_breaking: fd.get('ice_breaking')
+        };
+
+        if (IS_PREVIEW) {
+          if (editId) {
+            state.curriculum_plans = state.curriculum_plans.map(p => p.id === editId ? payload : p);
+          } else {
+            state.curriculum_plans.unshift(payload);
+          }
+          savePreviewData();
+          closeModal();
+          renderActiveModule();
+          showToast('Perangkat pembelajaran berhasil disimpan!');
+        } else {
+          try {
+            const { data, error } = await supabase.from('curriculum_plans').upsert({
+              ...payload,
+              teacher_id: state.user.id
+            }).select().single();
+            if (error) throw error;
+            await fetchSupabaseAll();
+            closeModal();
+            renderActiveModule();
+            showToast('Modul ajar tersimpan di Supabase!');
+          } catch (err) {
+            showToast(err.message, 'error');
+          }
+        }
+      },
+
+      deleteCurriculumPlan(id) {
+        askConfirm('Hapus Modul Ajar?', 'Perangkat ajar ini akan dihapus permanen.', async () => {
+          if (IS_PREVIEW) {
+            state.curriculum_plans = state.curriculum_plans.filter(p => p.id !== id);
+            savePreviewData();
+            renderActiveModule();
+            showToast('Perangkat ajar dihapus.');
+          } else {
+            await supabase.from('curriculum_plans').delete().eq('id', id);
+            state.curriculum_plans = state.curriculum_plans.filter(p => p.id !== id);
+            renderActiveModule();
+            showToast('Perangkat ajar dihapus.');
+          }
+        });
+      },
+
+      // ----------------- CRUD JURNAL MENGAJAR & PRESENSI KELAS -----------------
+      openJournalModal(classId) {
+        const cls = state.classes.find(c => c.id === classId) || state.classes[0];
+        if (!cls) {
+          showToast('Tambahkan kelas terlebih dahulu di menu Profil & Master.', 'warning');
+          return;
+        }
+        const stdList = state.students.filter(s => s.class_id === cls.id);
+        const today = new Date().toISOString().slice(0, 10);
+        const nextMeeting = state.teaching_journals.filter(j => j.class_id === cls.id).length + 1;
+
+        openModal(`Input Presensi & Jurnal Mengajar — ${cls.class_name}`, `
+          <form onsubmit="window.app.saveJournalAndAttendance(event, '${cls.id}')" class="space-y-4 text-xs">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="font-bold block mb-1">Tanggal Mengajar</label>
+                <input type="date" name="teaching_date" required value="${today}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+              <div>
+                <label class="font-bold block mb-1">Pertemuan Ke-</label>
+                <input type="number" name="meeting_no" required value="${nextMeeting}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+            </div>
+
+            <div>
+              <label class="font-bold block mb-1">Materi / Topik Pembelajaran (Terhubung dari Modul Ajar)</label>
+              <input name="topic" required list="topic-suggestions" placeholder="Ketik atau pilih dari Modul Ajar" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              <datalist id="topic-suggestions">
+                ${state.curriculum_plans.map(p => `<option value="${p.topic_title}"></option>`).join('')}
+              </datalist>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="font-bold block mb-1">Catatan Kegiatan Kelas</label>
+                <textarea name="activities_notes" rows="2" placeholder="Diskusi LKPD, presentasi kelompok..." class="w-full p-2.5 rounded-xl border border-slate-200"></textarea>
+              </div>
+              <div>
+                <label class="font-bold block mb-1">Refleksi Guru & Tindak Lanjut</label>
+                <textarea name="reflection" rows="2" placeholder="Catatan kendala & rencana pertemuan berikutnya..." class="w-full p-2.5 rounded-xl border border-slate-200"></textarea>
+              </div>
+            </div>
+
+            <div class="border-t border-slate-200 pt-3">
+              <div class="font-extrabold text-slate-900 mb-2">Presensi Kehadiran Siswa (${stdList.length} Siswa)</div>
+              ${stdList.length === 0 ? `<div class="text-slate-400">Belum ada siswa di kelas ini.</div>` : `
+                <div class="space-y-2 max-h-48 overflow-y-auto custom-scroll pr-1">
+                  ${stdList.map(s => `
+                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/70">
+                      <span class="font-bold text-slate-800">${s.full_name}</span>
+                      <div class="flex items-center gap-2">
+                        ${['Hadir', 'Sakit', 'Izin', 'Alpa'].map(st => `
+                          <label class="inline-flex items-center gap-1 cursor-pointer">
+                            <input type="radio" name="att_${s.id}" value="${st}" ${st === 'Hadir' ? 'checked' : ''} />
+                            <span class="text-[11px] font-semibold">${st}</span>
+                          </label>
+                        `).join('')}
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              `}
+            </div>
+
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-[#072B7A] text-white font-bold shadow-md">
+              Simpan Jurnal & Presensi Kelas
+            </button>
+          </form>
+        `);
+      },
+
+      async saveJournalAndAttendance(e, classId) {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const journalId = crypto.randomUUID();
+        const stdList = state.students.filter(s => s.class_id === classId);
+
+        const journalItem = {
+          id: journalId,
+          class_id: classId,
+          teaching_date: fd.get('teaching_date'),
+          meeting_no: Number(fd.get('meeting_no') || 1),
+          topic: fd.get('topic'),
+          activities_notes: fd.get('activities_notes'),
+          reflection: fd.get('reflection')
+        };
+
+        const attItems = stdList.map(s => ({
+          id: crypto.randomUUID(),
+          journal_id: journalId,
+          student_id: s.id,
+          status: fd.get(`att_${s.id}`) || 'Hadir',
+          notes: ''
+        }));
+
+        if (IS_PREVIEW) {
+          state.teaching_journals.unshift(journalItem);
+          state.attendances.push(...attItems);
+          savePreviewData();
+          closeModal();
+          renderActiveModule();
+          showToast('Jurnal mengajar & presensi berhasil disimpan!');
+        } else {
+          try {
+            const { error: jErr } = await supabase.from('teaching_journals').insert({
+              ...journalItem,
+              teacher_id: state.user.id
+            });
+            if (jErr) throw jErr;
+
+            if (attItems.length > 0) {
+              const rows = attItems.map(a => ({ ...a, teacher_id: state.user.id }));
+              const { error: aErr } = await supabase.from('attendances').insert(rows);
+              if (aErr) throw aErr;
+            }
+            await fetchSupabaseAll();
+            closeModal();
+            renderActiveModule();
+            showToast('Jurnal & presensi tersimpan di Supabase!');
+          } catch (err) {
+            showToast(err.message, 'error');
+          }
+        }
+      },
+
+      deleteJournal(id) {
+        askConfirm('Hapus Jurnal?', 'Data jurnal dan presensi pada pertemuan ini akan dihapus.', async () => {
+          if (IS_PREVIEW) {
+            state.teaching_journals = state.teaching_journals.filter(j => j.id !== id);
+            state.attendances = state.attendances.filter(a => a.journal_id !== id);
+            savePreviewData();
+            renderActiveModule();
+            showToast('Jurnal dihapus.');
+          } else {
+            await supabase.from('attendances').delete().eq('journal_id', id);
+            await supabase.from('teaching_journals').delete().eq('id', id);
+            await fetchSupabaseAll();
+            renderActiveModule();
+            showToast('Jurnal dihapus.');
+          }
+        });
+      },
+
+      // ----------------- CRUD ASESMEN & BANK SOAL -----------------
+      openAssessmentModal() {
+        openModal('Buat Paket Asesmen Baru', `
+          <form onsubmit="window.app.saveAssessment(event)" class="space-y-3 text-xs">
+            <div>
+              <label class="font-bold block mb-1">Judul Paket Asesmen</label>
+              <input name="title" required placeholder="Contoh: Sumatif Lingkup Materi 1 - Algoritma" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+            </div>
+            <div class="grid grid-cols-3 gap-2.5">
+              <div>
+                <label class="font-bold block mb-1">Jenis Asesmen</label>
+                <select name="assessment_type" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white">
+                  <option value="Formatif">Formatif</option>
+                  <option value="Sumatif">Sumatif</option>
+                  <option value="Praktik/Proyek">Praktik / Proyek</option>
+                </select>
+              </div>
+              <div>
+                <label class="font-bold block mb-1">Target Kelas</label>
+                <select name="class_id" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white">
+                  ${state.classes.map(c => `<option value="${c.id}">${c.class_name}</option>`).join('')}
+                </select>
+              </div>
+              <div>
+                <label class="font-bold block mb-1">Batas KKTP / KKM</label>
+                <input type="number" name="kkm_target" required value="75" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-[#072B7A] text-white font-bold">Simpan Paket Asesmen</button>
+          </form>
+        `);
+      },
+
+      async saveAssessment(e) {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const item = {
+          id: crypto.randomUUID(),
+          class_id: fd.get('class_id'),
+          title: fd.get('title'),
+          assessment_type: fd.get('assessment_type'),
+          kkm_target: Number(fd.get('kkm_target') || 75),
+          questions_data: []
+        };
+
+        if (IS_PREVIEW) {
+          state.assessments.unshift(item);
+          state.selectedAssessmentId = item.id;
+          savePreviewData();
+          closeModal();
+          renderActiveModule();
+          showToast('Paket asesmen berhasil dibuat!');
+        } else {
+          try {
+            const { data, error } = await supabase.from('assessments').insert({
+              ...item,
+              teacher_id: state.user.id
+            }).select().single();
+            if (error) throw error;
+            state.assessments.unshift(data);
+            state.selectedAssessmentId = data.id;
+            closeModal();
+            renderActiveModule();
+            showToast('Paket asesmen tersimpan di Supabase!');
+          } catch (err) {
+            showToast(err.message, 'error');
+          }
+        }
+      },
+
+      openQuestionModal(asmId) {
+        openModal('Tambah Butir Soal & Kisi-kisi', `
+          <form onsubmit="window.app.saveQuestionItem(event, '${asmId}')" class="space-y-3 text-xs">
+            <div class="grid grid-cols-2 gap-2.5">
+              <div>
+                <label class="font-bold block mb-1">Bentuk Soal</label>
+                <select name="type" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white">
+                  <option value="PG">Pilihan Ganda (PG)</option>
+                  <option value="Uraian">Uraian / Esai</option>
+                </select>
+              </div>
+              <div>
+                <label class="font-bold block mb-1">Bobot Skor</label>
+                <input type="number" name="score_weight" required value="20" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+            </div>
+            <div>
+              <label class="font-bold block mb-1">Indikator Kisi-kisi Soal</label>
+              <input name="indicator" required placeholder="Disajikan studi kasus, siswa mampu..." class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+            </div>
+            <div>
+              <label class="font-bold block mb-1">Pertanyaan / Pokok Soal</label>
+              <textarea name="question" rows="3" required class="w-full p-2.5 rounded-xl border border-slate-200"></textarea>
+            </div>
+            <div>
+              <label class="font-bold block mb-1">Opsi Jawaban (Khusus PG, pisahkan per baris A/B/C/D)</label>
+              <textarea name="options_raw" rows="3" placeholder="A. Pilihan Pertama&#10;B. Pilihan Kedua&#10;C. Pilihan Ketiga&#10;D. Pilihan Keempat" class="w-full p-2.5 rounded-xl border border-slate-200"></textarea>
+            </div>
+            <div>
+              <label class="font-bold block mb-1">Kunci Jawaban / Rubrik Penilaian</label>
+              <input name="answer_key" required placeholder="Contoh: B atau penjelasan rubrik" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-[#072B7A] text-white font-bold">Tambahkan ke Bank Soal</button>
+          </form>
+        `);
+      },
+
+      async saveQuestionItem(e, asmId) {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const asm = state.assessments.find(a => a.id === asmId);
+        if (!asm) return;
+
+        const qList = Array.isArray(asm.questions_data) ? [...asm.questions_data] : [];
+        const options = String(fd.get('options_raw') || '').split('\n').map(s => s.trim()).filter(Boolean);
+
+        qList.push({
+          no: qList.length + 1,
+          type: fd.get('type'),
+          score_weight: Number(fd.get('score_weight') || 20),
+          indicator: fd.get('indicator'),
+          question: fd.get('question'),
+          options,
+          answer_key: fd.get('answer_key')
+        });
+
+        asm.questions_data = qList;
+
+        if (IS_PREVIEW) {
+          savePreviewData();
+          closeModal();
+          renderActiveModule();
+          showToast('Butir soal ditambahkan!');
+        } else {
+          try {
+            const { error } = await supabase.from('assessments').update({ questions_data: qList }).eq('id', asmId);
+            if (error) throw error;
+            closeModal();
+            renderActiveModule();
+            showToast('Butir soal tersimpan di Supabase!');
+          } catch (err) {
+            showToast(err.message, 'error');
+          }
+        }
+      },
+
+      deleteAssessment(id) {
+        askConfirm('Hapus Paket Asesmen?', 'Paket soal beserta rekap nilainya akan dihapus.', async () => {
+          if (IS_PREVIEW) {
+            state.assessments = state.assessments.filter(a => a.id !== id);
+            state.grades = state.grades.filter(g => g.assessment_id !== id);
+            savePreviewData();
+            renderActiveModule();
+            showToast('Paket asesmen dihapus.');
+          } else {
+            await supabase.from('grades').delete().eq('assessment_id', id);
+            await supabase.from('assessments').delete().eq('id', id);
+            await fetchSupabaseAll();
+            renderActiveModule();
+            showToast('Paket asesmen dihapus.');
+          }
+        });
+      },
+
+      // ----------------- CRUD OLAH NILAI & REMEDIAL OTOMATIS -----------------
+      openGradeModal(asmId, studentId) {
+        const asm = state.assessments.find(a => a.id === asmId);
+        const std = state.students.find(s => s.id === studentId);
+        const existing = state.grades.find(g => g.assessment_id === asmId && g.student_id === studentId) || {};
+        const kkm = Number(asm?.kkm_target || 75);
+
+        openModal(`Input Nilai — ${std?.full_name || 'Siswa'}`, `
+          <form onsubmit="window.app.saveGrade(event, '${asmId}', '${studentId}', ${kkm})" class="space-y-3 text-xs">
+            <div class="p-3 rounded-xl bg-blue-50 text-blue-900 font-semibold">
+              Asesmen: <strong>${asm?.title || ''}</strong> • Batas KKTP/KKM: <strong>${kkm}</strong>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="font-bold block mb-1">Nilai Awal (0 - 100)</label>
+                <input type="number" step="0.1" name="raw_score" required value="${existing.raw_score ?? 80}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+              <div>
+                <label class="font-bold block mb-1">Nilai Remedial (Kosongkan jika tuntas)</label>
+                <input type="number" step="0.1" name="remedial_score" value="${existing.remedial_score ?? ''}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+            </div>
+            <div>
+              <label class="font-bold block mb-1">Catatan Capaian / Umpan Balik Guru</label>
+              <textarea name="teacher_feedback" rows="2" placeholder="Catatan pengayaan atau materi yang diremedial..." class="w-full p-2.5 rounded-xl border border-slate-200">${existing.teacher_feedback || ''}</textarea>
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-[#072B7A] text-white font-bold">Hitung & Simpan Nilai</button>
+          </form>
+        `);
+      },
+
+      async saveGrade(e, asmId, studentId, kkm) {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const raw = Number(fd.get('raw_score') || 0);
+        const remRaw = fd.get('remedial_score');
+        const rem = remRaw !== '' && remRaw !== null ? Number(remRaw) : null;
+        const needsRemedial = raw < kkm;
+        const finalScore = rem !== null ? Math.max(raw, rem) : raw;
+
+        const existing = state.grades.find(g => g.assessment_id === asmId && g.student_id === studentId);
+        const payload = {
+          id: existing ? existing.id : crypto.randomUUID(),
+          assessment_id: asmId,
+          student_id: studentId,
+          raw_score: raw,
+          remedial_score: rem,
+          final_score: finalScore,
+          needs_remedial: needsRemedial,
+          teacher_feedback: fd.get('teacher_feedback')
+        };
+
+        if (IS_PREVIEW) {
+          if (existing) {
+            state.grades = state.grades.map(g => g.id === existing.id ? payload : g);
+          } else {
+            state.grades.push(payload);
+          }
+          savePreviewData();
+          closeModal();
+          renderActiveModule();
+          showToast('Nilai berhasil dihitung dan disimpan!');
+        } else {
+          try {
+            const { error } = await supabase.from('grades').upsert({
+              ...payload,
+              teacher_id: state.user.id
+            });
+            if (error) throw error;
+            await fetchSupabaseAll();
+            closeModal();
+            renderActiveModule();
+            showToast('Nilai tersimpan ke Supabase!');
+          } catch (err) {
+            showToast(err.message, 'error');
+          }
+        }
+      },
+
+      exportGradesCSV(asmId) {
+        const asm = state.assessments.find(a => a.id === asmId);
+        if (!asm) {
+          showToast('Pilih asesmen terlebih dahulu.', 'warning');
+          return;
+        }
+        const rows = [['No', 'NISN', 'Nama Siswa', 'Nilai Awal', 'Nilai Remedial', 'Nilai Akhir', 'Status KKTP', 'Catatan Guru']];
+        const targetStudents = state.students.filter(s => !asm.class_id || s.class_id === asm.class_id);
+
+        targetStudents.forEach((std, idx) => {
+          const g = state.grades.find(x => x.assessment_id === asmId && x.student_id === std.id);
+          rows.push([
+            idx + 1,
+            std.nisn,
+            `"${std.full_name}"`,
+            g ? g.raw_score : '',
+            g && g.remedial_score !== null ? g.remedial_score : '',
+            g ? g.final_score : '',
+            g ? (g.final_score >= asm.kkm_target ? 'Tuntas' : 'Belum Tuntas') : 'Belum Input',
+            `"${(g?.teacher_feedback || '').replace(/"/g, '""')}"`
+          ]);
+        });
+
+        const csvContent = 'data:text/csv;charset=utf-8,' + rows.map(e => e.join(',')).join('\n');
+        const link = document.createElement('a');
+        link.setAttribute('href', encodeURI(csvContent));
+        link.setAttribute('download', `Rekap_Nilai_${asm.title.replace(/\s+/g, '_')}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        showToast('Berhasil mengekspor file CSV/Excel!');
+      },
+
+      // ----------------- CRUD WALI KELAS & PORTOFOLIO GURU -----------------
+      openHomeroomModal() {
+        openModal('Tambah Catatan Wali Kelas & Draf Pesan Orang Tua', `
+          <form onsubmit="window.app.saveHomeroom(event)" class="space-y-3 text-xs">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="font-bold block mb-1">Pilih Siswa</label>
+                <select name="student_id" required class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white">
+                  ${state.students.map(s => `<option value="${s.id}">${s.full_name}</option>`).join('')}
+                </select>
+              </div>
+              <div>
+                <label class="font-bold block mb-1">Kategori Catatan</label>
+                <select name="category" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white">
+                  <option value="Prestasi">Prestasi Akademik / Non-Akademik</option>
+                  <option value="Pembinaan Disiplin">Pembinaan Kehadiran & Disiplin</option>
+                  <option value="Konseling & Motivasi">Konseling & Motivasi Belajar</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="font-bold block mb-1">Rincian Kejadian / Catatan Pembinaan</label>
+              <textarea name="details" rows="2" required class="w-full p-2.5 rounded-xl border border-slate-200"></textarea>
+            </div>
+            <div>
+              <label class="font-bold block mb-1">Draf Pesan Komunikasi ke Orang Tua / Wali</label>
+              <textarea name="parent_contact_note" rows="3" required placeholder="Yth. Bapak/Ibu Orang Tua/Wali, kami menginformasikan bahwa..." class="w-full p-2.5 rounded-xl border border-slate-200"></textarea>
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-[#072B7A] text-white font-bold">Simpan Catatan Wali Kelas</button>
+          </form>
+        `);
+      },
+
+      async saveHomeroom(e) {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const item = {
+          id: crypto.randomUUID(),
+          student_id: fd.get('student_id'),
+          record_date: new Date().toISOString().slice(0, 10),
+          category: fd.get('category'),
+          details: fd.get('details'),
+          parent_contact_note: fd.get('parent_contact_note')
+        };
+
+        if (IS_PREVIEW) {
+          state.homeroom_records.unshift(item);
+          savePreviewData();
+          closeModal();
+          renderActiveModule();
+          showToast('Catatan wali kelas disimpan!');
+        } else {
+          try {
+            const { error } = await supabase.from('homeroom_records').insert({
+              ...item,
+              teacher_id: state.user.id
+            });
+            if (error) throw error;
+            await fetchSupabaseAll();
+            closeModal();
+            renderActiveModule();
+            showToast('Catatan wali kelas tersimpan di Supabase!');
+          } catch (err) {
+            showToast(err.message, 'error');
+          }
+        }
+      },
+
+      deleteHomeroom(id) {
+        askConfirm('Hapus Catatan?', 'Catatan pembinaan wali kelas ini akan dihapus.', async () => {
+          if (IS_PREVIEW) {
+            state.homeroom_records = state.homeroom_records.filter(h => h.id !== id);
+            savePreviewData();
+            renderActiveModule();
+          } else {
+            await supabase.from('homeroom_records').delete().eq('id', id);
+            state.homeroom_records = state.homeroom_records.filter(h => h.id !== id);
+            renderActiveModule();
+          }
+          showToast('Catatan dihapus.');
+        });
+      },
+
+      openPortfolioModal() {
+        openModal('Tambah Portofolio & Pengembangan Kompetensi Guru', `
+          <form onsubmit="window.app.savePortfolio(event)" class="space-y-3 text-xs">
+            <div>
+              <label class="font-bold block mb-1">Judul Kegiatan / Sertifikat / Karya</label>
+              <input name="title" required placeholder="Contoh: Workshop Penyusunan Modul Ajar Berdiferensiasi" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="font-bold block mb-1">Kategori</label>
+                <select name="category" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white">
+                  <option value="Sertifikat & Pelatihan">Sertifikat & Pelatihan</option>
+                  <option value="Karya Inovasi / Media Ajar">Karya Inovasi / Media Ajar</option>
+                  <option value="Refleksi & Praktik Baik">Refleksi & Praktik Baik</option>
+                </select>
+              </div>
+              <div>
+                <label class="font-bold block mb-1">Tanggal Pelaksanaan</label>
+                <input type="date" name="date_achieved" required value="${new Date().toISOString().slice(0, 10)}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+            </div>
+            <div>
+              <label class="font-bold block mb-1">Penyelenggara / Instansi</label>
+              <input name="organizer" required placeholder="Dinas Pendidikan / MGMP / Kemendikdasmen" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+            </div>
+            <div>
+              <label class="font-bold block mb-1">Refleksi & Rencana Tindak Lanjut Kompetensi</label>
+              <textarea name="reflection_notes" rows="2" class="w-full p-2.5 rounded-xl border border-slate-200"></textarea>
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-[#072B7A] text-white font-bold">Simpan Portofolio</button>
+          </form>
+        `);
+      },
+
+      async savePortfolio(e) {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const item = {
+          id: crypto.randomUUID(),
+          title: fd.get('title'),
+          category: fd.get('category'),
+          date_achieved: fd.get('date_achieved'),
+          organizer: fd.get('organizer'),
+          reflection_notes: fd.get('reflection_notes')
+        };
+
+        if (IS_PREVIEW) {
+          state.teacher_portfolios.unshift(item);
+          savePreviewData();
+          closeModal();
+          renderActiveModule();
+          showToast('Portofolio guru disimpan!');
+        } else {
+          try {
+            const { error } = await supabase.from('teacher_portfolios').insert({
+              ...item,
+              teacher_id: state.user.id
+            });
+            if (error) throw error;
+            await fetchSupabaseAll();
+            closeModal();
+            renderActiveModule();
+            showToast('Portofolio tersimpan di Supabase!');
+          } catch (err) {
+            showToast(err.message, 'error');
+          }
+        }
+      },
+
+      deletePortfolio(id) {
+        askConfirm('Hapus Portofolio?', 'Data portofolio ini akan dihapus.', async () => {
+          if (IS_PREVIEW) {
+            state.teacher_portfolios = state.teacher_portfolios.filter(p => p.id !== id);
+            savePreviewData();
+            renderActiveModule();
+          } else {
+            await supabase.from('teacher_portfolios').delete().eq('id', id);
+            state.teacher_portfolios = state.teacher_portfolios.filter(p => p.id !== id);
+            renderActiveModule();
+          }
+          showToast('Portofolio dihapus.');
+        });
+      },
+
+      // ----------------- GENERATOR ASISTEN AI KONTEKSTUAL -----------------
+      generateAIDraft() {
+        const subject = document.getElementById('ai-subject')?.value || 'Mata Pelajaran';
+        const topic = document.getElementById('ai-topic')?.value || 'Topik Pembelajaran';
+        const mode = document.getElementById('ai-mode')?.value || 'rpp';
+        const editor = document.getElementById('ai-output-editor');
+
+        if (mode === 'rpp') {
+          editor.value = `[DRAF MODUL AJAR / RPP — ${subject.toUpperCase()}]
+Topik Materi: ${topic}
+
+1. CAPAIAN PEMBELAJARAN (CP):
+Peserta didik mampu memahami, menganalisis, dan menerapkan konsep ${topic} untuk menyelesaikan permasalahan kontekstual secara logis, kolaboratif, dan bertanggung jawab.
+
+2. TUJUAN PEMBELAJARAN (TP):
+- Peserta didik dapat menjelaskan konsep dasar dan prinsip kerja ${topic} dengan bahasa sendiri.
+- Peserta didik dapat mengidentifikasi studi kasus nyata yang berkaitan dengan ${topic}.
+- Peserta didik dapat merancang solusi kelompok menggunakan lembar kerja (LKPD) dan mempresentasikannya.
+
+3. ALUR TUJUAN PEMBELAJARAN (ATP):
+Tahap 1: Apersepsi & Pengenalan Konsep -> Tahap 2: Eksplorasi & Diskusi Kelompok (LKPD) -> Tahap 3: Presentasi Karya & Umpan Balik -> Tahap 4: Evaluasi Formatif & Refleksi.
+
+4. AKTIVITAS LKPD KELOMPOK:
+Siswa dibagi dalam kelompok 4-5 orang untuk menganalisis kartu kasus "${topic}", menyusun peta pikiran solusi, dan mendemonstrasikan hasilnya di depan kelas.
+
+5. IDE ICE BREAKING (5 MENIT):
+"Sambung Kata Kilat": Guru menyebutkan satu kata kunci terkait ${topic}, siswa secara berantai menyebutkan istilah terkait dalam waktu 3 detik disertai tepuk semangat.`;
+        } else if (mode === 'soal') {
+          editor.value = `[DRAF KISI-KISI & BUTIR SOAL — ${topic.toUpperCase()}]
+
+Soal 1 (Pilihan Ganda - Mudah)
+Indikator: Peserta didik dapat mengidentifikasi pengertian dasar ${topic}.
+Pertanyaan: Manakah di bawah ini yang merupakan tujuan utama dari penerapan ${topic} dalam kehidupan sehari-hari?
+A. Mempermudah pemecahan masalah secara terstruktur
+B. Menghilangkan seluruh tahapan analisis data
+C. Membuat proses kerja menjadi lebih rumit
+D. Mengabaikan aturan keselamatan kerja
+Kunci Jawaban: A
+
+Soal 2 (Pilihan Ganda - Menengah)
+Indikator: Disajikan kasus, peserta didik dapat menentukan langkah penyelesaian ${topic}.
+Pertanyaan: Ketika tim Anda menemukan kendala saat menerapkan ${topic}, langkah evaluasi pertama yang paling tepat dilakukan adalah...
+A. Menghentikan seluruh proyek
+B. Melakukan dekomposisi masalah dan memeriksa sumber kendala
+C. Mengganti seluruh anggota kelompok
+D. Menyalin hasil kelompok lain
+Kunci Jawaban: B
+
+Soal 3 (Uraian - HOTS)
+Indikator: Peserta didik mampu merancang solusi berbasis ${topic}.
+Pertanyaan: Jelaskan 3 langkah konkret bagaimana Anda menerapkan konsep ${topic} untuk meningkatkan efisiensi belajar di sekolah!
+Rubrik Kunci: Skor penuh (40 poin) apabila siswa menyebutkan minimal 3 langkah runtut beserta contoh nyata.`;
+        } else {
+          editor.value = `Yth. Bapak/Ibu Orang Tua/Wali Siswa,
+Salam hangat dari ${state.teacher?.school_name || 'Sekolah'}.
+
+Melalui pesan ini kami ingin menyampaikan perkembangan belajar putra/putri Bapak/Ibu pada mata pelajaran ${subject} khususnya materi "${topic}". Kami sangat mengapresiasi semangat belajar yang ditunjukkan di kelas, serta memohon dukungan Bapak/Ibu di rumah untuk terus memantau pengulangan materi menjelang asesmen minggu depan.
+
+Terima kasih atas kerja sama dan sinergi yang baik antara keluarga dan sekolah.
+Hormat kami,
+${state.teacher?.full_name || 'Guru Mata Pelajaran'}`;
+        }
+
+        showToast('Draf AI berhasil dibuat! Silakan tinjau dan edit.');
+      },
+
+      copyAIOutput() {
+        const val = document.getElementById('ai-output-editor')?.value || '';
+        if (!val) return;
+        navigator.clipboard.writeText(val);
+        showToast('Naskah draf disalin ke clipboard!');
+      },
+
+      async saveAIToCurriculum() {
+        const subject = document.getElementById('ai-subject')?.value || state.teacher?.subject_name || 'Informatika';
+        const topic = document.getElementById('ai-topic')?.value || 'Materi Baru';
+        const text = document.getElementById('ai-output-editor')?.value || '';
+        if (!text.trim()) {
+          showToast('Buat draf terlebih dahulu sebelum menyimpan.', 'warning');
+          return;
+        }
+
+        const newPlan = {
+          id: crypto.randomUUID(),
+          subject_name: subject,
+          grade_level: 9,
+          semester: state.teacher?.semester || 'Ganjil',
+          effective_weeks: 18,
+          topic_title: topic,
+          cp_text: `Memahami dan menerapkan konsep ${topic} secara sistematis.`,
+          tp_text: text.slice(0, 450),
+          atp_text: 'Apersepsi -> Eksplorasi LKPD -> Presentasi -> Asesmen Formatif',
+          lkpd_activity: `Diskusi kelompok dan pemecahan masalah tentang ${topic}.`,
+          ice_breaking: 'Kuis kilat interaktif 5 menit pembuka kelas.'
+        };
+
+        if (IS_PREVIEW) {
+          state.curriculum_plans.unshift(newPlan);
+          savePreviewData();
+          showToast('Draf disimpan ke menu Persiapan Ajar!');
+          switchTab('persiapan');
+        } else {
+          try {
+            const { error } = await supabase.from('curriculum_plans').insert({
+              ...newPlan,
+              teacher_id: state.user.id
+            });
+            if (error) throw error;
+            await fetchSupabaseAll();
+            showToast('Draf disimpan ke Supabase!');
+            switchTab('persiapan');
+          } catch (err) {
+            showToast(err.message, 'error');
+          }
+        }
+      },
+
+      copyText(txt) {
+        navigator.clipboard.writeText(txt);
+        showToast('Teks berhasil disalin ke clipboard!');
+      },
+
+      // ----------------- FITUR CETAK DOKUMEN RESMI SEKOLAH (KOP SURAT) -----------------
+      printCurriculumPlan(planId) {
+        const p = state.curriculum_plans.find(x => x.id === planId);
+        const t = state.teacher || {};
+        if (!p) return;
+
+        const printArea = document.getElementById('print-area');
+        printArea.innerHTML = `
+          <div style="font-family: 'Times New Roman', serif; color: #000; line-height: 1.5;">
+            <div style="text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 18px;">
+              <h2 style="margin: 0; font-size: 18pt; text-transform: uppercase;">${t.school_name || 'PEMERINTAH DAERAH / SATUAN PENDIDIKAN'}</h2>
+              <p style="margin: 4px 0 0; font-size: 10pt;">${t.school_address || 'Alamat Lengkap Sekolah'} • Tahun Ajaran ${t.academic_year || '2026/2027'}</p>
+            </div>
+            <h3 style="text-align: center; text-decoration: underline; margin-bottom: 16px;">MODUL AJAR / RENCANA PELAKSANAAN PEMBELAJARAN (RPP)</h3>
+            <table style="width: 100%; margin-bottom: 14px; font-size: 11pt;">
+              <tr><td style="width: 180px;"><strong>Mata Pelajaran</strong></td><td>: ${p.subject_name}</td><td style="width: 150px;"><strong>Kelas / Semester</strong></td><td>: ${p.grade_level} / ${p.semester}</td></tr>
+              <tr><td><strong>Topik / Materi Pokok</strong></td><td>: ${p.topic_title}</td><td><strong>Alokasi Efektif</strong></td><td>: ${p.effective_weeks} Minggu Efektif</td></tr>
+              <tr><td><strong>Nama Guru</strong></td><td>: ${t.full_name}</td><td><strong>NIP</strong></td><td>: ${t.nip || '-'}</td></tr>
+            </table>
+            <hr/>
+            <h4>A. Capaian Pembelajaran (CP)</h4>
+            <p>${p.cp_text}</p>
+            <h4>B. Tujuan Pembelajaran (TP)</h4>
+            <p style="white-space: pre-line;">${p.tp_text}</p>
+            <h4>C. Alur Tujuan Pembelajaran (ATP) & Langkah Kegiatan</h4>
+            <p style="white-space: pre-line;">${p.atp_text}</p>
+            <h4>D. Media, LKPD & Aktivitas Kelompok</h4>
+            <p>${p.lkpd_activity}</p>
+            <h4>E. Apersepsi & Ice Breaking</h4>
+            <p>${p.ice_breaking}</p>
+            <table style="width: 100%; margin-top: 48px; text-align: center; font-size: 11pt;">
+              <tr>
+                <td style="width: 50%;">Mengetahui,<br/>Kepala Sekolah<br/><br/><br/><br/><strong><u>${t.principal_name || 'Kepala Sekolah'}</u></strong><br/>NIP. ${t.principal_nip || '-'}</td>
+                <td style="width: 50%;">Guru Mata Pelajaran,<br/><br/><br/><br/><br/><strong><u>${t.full_name || 'Guru Mapel'}</u></strong><br/>NIP. ${t.nip || '-'}</td>
+              </tr>
+            </table>
+          </div>
+        `;
+        window.print();
+      },
+
+      printJournalReport(classId) {
+        const cls = state.classes.find(c => c.id === classId) || state.classes[0];
+        const t = state.teacher || {};
+        const journals = state.teaching_journals.filter(j => !cls || j.class_id === cls.id);
+
+        const printArea = document.getElementById('print-area');
+        printArea.innerHTML = `
+          <div style="font-family: 'Times New Roman', serif; color: #000;">
+            <div style="text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 18px;">
+              <h2 style="margin: 0; font-size: 16pt; text-transform: uppercase;">${t.school_name || 'SATUAN PENDIDIKAN'}</h2>
+              <p style="margin: 4px 0 0; font-size: 10pt;">JURNAL MENGAJAR HARIAN GURU • TA ${t.academic_year || '2026/2027'}</p>
+            </div>
+            <p><strong>Kelas:</strong> ${cls ? cls.class_name : 'Semua Kelas'} &nbsp;&nbsp;|&nbsp;&nbsp; <strong>Guru:</strong> ${t.full_name}</p>
+            <table border="1" cellspacing="0" cellpadding="6" style="width: 100%; border-collapse: collapse; font-size: 10pt;">
+              <thead>
+                <tr style="background: #f1f5f9;">
+                  <th>Pertemuan</th>
+                  <th>Tanggal</th>
+                  <th>Topik / Materi Pembelajaran</th>
+                  <th>Aktivitas Kelas</th>
+                  <th>Refleksi & Tindak Lanjut</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${journals.map(j => `
+                  <tr>
+                    <td style="text-align:center;">Ke-${j.meeting_no}</td>
+                    <td>${j.teaching_date}</td>
+                    <td><strong>${j.topic}</strong></td>
+                    <td>${j.activities_notes || '-'}</td>
+                    <td>${j.reflection || '-'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+        window.print();
+      },
+
+      printAssessment(asmId) {
+        const asm = state.assessments.find(a => a.id === asmId);
+        const t = state.teacher || {};
+        if (!asm) return;
+        const qList = Array.isArray(asm.questions_data) ? asm.questions_data : [];
+
+        const printArea = document.getElementById('print-area');
+        printArea.innerHTML = `
+          <div style="font-family: 'Times New Roman', serif; color: #000; line-height: 1.5;">
+            <div style="text-align: center; border-bottom: 3px double #000; padding-bottom: 10px; margin-bottom: 18px;">
+              <h2 style="margin: 0; font-size: 16pt; text-transform: uppercase;">${t.school_name || 'SATUAN PENDIDIKAN'}</h2>
+              <p style="margin: 4px 0 0; font-size: 10pt;">NASKAH SOAL ${asm.assessment_type.toUpperCase()} • ${asm.title}</p>
+            </div>
+            <ol style="font-size: 11pt;">
+              ${qList.map(q => `
+                <li style="margin-bottom: 12px;">
+                  <div>${q.question} <em>(Bobot: ${q.score_weight})</em></div>
+                  ${(q.options || []).map(opt => `<div style="margin-left: 14px;">${opt}</div>`).join('')}
+                </li>
+              `).join('')}
+            </ol>
+            <hr style="margin-top: 28px;"/>
+            <h4>KUNCI JAWABAN & KISI-KISI GURU</h4>
+            <ul>
+              ${qList.map((q, idx) => `<li><strong>No. ${idx + 1}:</strong> Kunci: ${q.answer_key} — <em>Indikator: ${q.indicator}</em></li>`).join('')}
+            </ul>
+          </div>
+        `;
+        window.print();
+      }
+    };
+
+    // ============================================================================
+    // AUTENTIKASI & INISIALISASI APLIKASI (PREVIEW vs PRODUKSI SUPABASE)
+    // ============================================================================
+    async function enterWorkspace(userObj) {
+      state.user = userObj;
+      if (IS_PREVIEW) {
+        loadPreviewData();
+      } else {
+        await fetchSupabaseAll();
+      }
+
+      document.getElementById('auth-screen').classList.add('hidden');
+      document.getElementById('app-shell').classList.remove('hidden');
+
+      updateShellHeader();
+      renderNavigation();
+      renderActiveModule();
+    }
+
+    function initApp() {
+      // Atur visibilitas elemen Preview berdasarkan konstanta IS_PREVIEW
+      const previewBanner = document.getElementById('preview-banner');
+      const quickLoginBox = document.getElementById('preview-quick-login');
+
+      if (IS_PREVIEW) {
+        previewBanner.classList.remove('hidden');
+        quickLoginBox.classList.remove('hidden');
+
+        document.getElementById('btn-quick-guru').addEventListener('click', () => {
+          enterWorkspace({ id: 'preview-teacher-1', email: 'budi.santoso@sekolah.sch.id' });
+          showToast('Berhasil masuk sebagai Guru (Mode Preview)!');
+        });
+
+        document.getElementById('btn-reset-preview').addEventListener('click', () => {
+          localStorage.removeItem(STORAGE_KEY);
+          loadPreviewData();
+          updateShellHeader();
+          renderActiveModule();
+          showToast('Data uji coba berhasil direset ke kondisi awal!', 'info');
+        });
+      } else {
+        // Saat IS_PREVIEW = false, sembunyikan 100% atribut preview & cek session Supabase Auth
+        previewBanner.remove();
+        quickLoginBox.remove();
+
+        if (supabase) {
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user) {
+              enterWorkspace(session.user);
+            }
+          });
+        }
+      }
+
+      // Form Login Submit
+      document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value;
+
+        if (IS_PREVIEW) {
+          enterWorkspace({ id: 'preview-teacher-1', email });
+          showToast('Masuk ke Ruang Kerja AsGURU (Mode Preview)');
+          return;
+        }
+
+        if (!supabase) {
+          showToast('Konfigurasi SUPABASE_URL dan SUPABASE_ANON_KEY belum diisi!', 'error');
+          return;
+        }
+
+        try {
+          const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          await enterWorkspace(data.user);
+          showToast('Berhasil masuk ke akun AsGURU Anda!');
+        } catch (err) {
+          showToast('Login gagal: ' + err.message, 'error');
+        }
+      });
+
+      // Logout Button
+      document.getElementById('btn-logout').addEventListener('click', async () => {
+        if (!IS_PREVIEW && supabase) {
+          await supabase.auth.signOut();
+        }
+        state.user = null;
+        document.getElementById('app-shell').classList.add('hidden');
+        document.getElementById('auth-screen').classList.remove('hidden');
+        showToast('Anda telah keluar dari sesi kerja.', 'info');
+      });
+
+      lucide.createIcons();
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
