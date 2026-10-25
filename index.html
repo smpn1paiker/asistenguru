@@ -333,6 +333,7 @@
     const NAV_ITEMS = [
       { id: 'dashboard', label: 'Dashboard', mobileLabel: 'Beranda', icon: 'home', subtitle: 'Jadwal hari ini, pengingat & akses cepat' },
       { id: 'persiapan', label: 'Persiapan Ajar', mobileLabel: 'Persiapan', icon: 'calendar-range', subtitle: 'Prota, Promes, CP, TP, ATP & Modul Ajar / RPP' },
+      { id: 'rpm_ai', label: 'Asisten AI Pembuat RPM', mobileLabel: 'RPM AI', icon: 'sparkles', subtitle: 'Penyusunan Rencana Pembelajaran Mendalam (RPM) bertahap' },
       { id: 'kelas', label: 'Kelas & Jurnal', mobileLabel: 'Kelas', icon: 'users', subtitle: 'Presensi kelas, jurnal mengajar & aktivitas' },
       { id: 'asesmen', label: 'Asesmen & Soal', mobileLabel: 'Asesmen', icon: 'file-check-2', subtitle: 'Kisi-kisi, bank soal PG/Uraian & rubrik' },
       { id: 'nilai', label: 'Nilai & Remedial', mobileLabel: 'Nilai', icon: 'bar-chart-3', subtitle: 'Olah nilai otomatis, KKTP & remedial' },
@@ -342,12 +343,60 @@
 
     const STORAGE_KEY = 'ASGURU_DATA_STORAGE_V2';
 
+    function createEmptyRpmForm() {
+      return {
+        id: null,
+        identitas: {
+          school_name: '',
+          teacher_name: '',
+          academic_year: '',
+          semester: '',
+          subject_name: '',
+          phase: '',
+          grade_level: '',
+          topic: '',
+          meeting_count: '',
+          jp_total: '',
+          minutes_per_jp: ''
+        },
+        karakteristik: {
+          prior_knowledge: '',
+          student_interests: '',
+          learning_needs: '',
+          support_needs: ''
+        },
+        kondisi: {
+          facilities: '',
+          environment: '',
+          technology_availability: '',
+          daily_life_context: ''
+        },
+        referensi_cp: {
+          subject_name: '',
+          phase: '',
+          cp_element: '',
+          cp_text: '',
+          source_title: '',
+          doc_number_year: '',
+          official_url: ''
+        },
+        preferensi: {
+          initial_tp: '',
+          learning_strategy: '',
+          special_notes: ''
+        }
+      };
+    }
+
     // STATE UTAMA APLIKASI
     const state = {
       user: null,
       activeTab: 'dashboard',
       selectedClassId: 'cls-1',
       selectedAssessmentId: 'asm-1',
+      rpmActiveStep: 1,
+      rpmCurrentForm: createEmptyRpmForm(),
+      rpm_drafts: [],
       teacher: {
         id: 'preview-teacher-1',
         full_name: 'Budi Santoso, S.Kom., Gr.',
@@ -440,6 +489,8 @@
         if (raw) {
           const parsed = JSON.parse(raw);
           Object.assign(state, parsed);
+          if (!state.rpmCurrentForm) state.rpmCurrentForm = createEmptyRpmForm();
+          if (!Array.isArray(state.rpm_drafts)) state.rpm_drafts = [];
         }
       } catch (err) {}
     }
@@ -464,7 +515,8 @@
           { data: assessmentsData },
           { data: gradesData },
           { data: homeroomData },
-          { data: portfolioData }
+          { data: portfolioData },
+          { data: rpmDraftsData, error: rpmErr }
         ] = await Promise.all([
           supabase.from('teachers').select('*').eq('id', uid).maybeSingle(),
           supabase.from('classes').select('*').eq('teacher_id', uid).order('created_at', { ascending: true }),
@@ -475,7 +527,8 @@
           supabase.from('assessments').select('*').eq('teacher_id', uid).order('created_at', { ascending: false }),
           supabase.from('grades').select('*').eq('teacher_id', uid),
           supabase.from('homeroom_records').select('*').eq('teacher_id', uid).order('record_date', { ascending: false }),
-          supabase.from('teacher_portfolios').select('*').eq('teacher_id', uid).order('date_achieved', { ascending: false })
+          supabase.from('teacher_portfolios').select('*').eq('teacher_id', uid).order('date_achieved', { ascending: false }),
+          supabase.from('rpm_drafts').select('*').eq('teacher_id', uid).order('updated_at', { ascending: false })
         ]);
 
         if (teacherData) state.teacher = teacherData;
@@ -488,6 +541,14 @@
         state.grades = gradesData || [];
         state.homeroom_records = homeroomData || [];
         state.teacher_portfolios = portfolioData || [];
+
+        if (!rpmErr && rpmDraftsData) {
+          state.rpm_drafts = rpmDraftsData;
+        } else {
+          // Fallback ke localStorage jika tabel rpm_drafts belum dibuat di Supabase
+          const localDrafts = localStorage.getItem('ASGURU_RPM_DRAFTS_FALLBACK');
+          if (localDrafts) state.rpm_drafts = JSON.parse(localDrafts);
+        }
 
         if (state.classes.length > 0 && !state.selectedClassId) state.selectedClassId = state.classes[0].id;
         if (state.assessments.length > 0 && !state.selectedAssessmentId) state.selectedAssessmentId = state.assessments[0].id;
@@ -591,6 +652,11 @@
                   class="px-4 py-2.5 rounded-xl bg-[#FBBF24] hover:bg-amber-300 text-slate-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 flex items-center gap-2 transition active:scale-95">
                   <i data-lucide="calendar-range" class="w-4 h-4"></i>
                   <span>Persiapan Ajar</span>
+                </button>
+                <button onclick="window.app.switchTab('rpm_ai')"
+                  class="px-3.5 py-2.5 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 border border-amber-300/40 text-amber-200 font-extrabold text-xs flex items-center gap-1.5 backdrop-blur-sm transition">
+                  <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i>
+                  <span>Asisten AI Pembuat RPM</span>
                 </button>
                 <button onclick="window.app.switchTab('kelas')"
                   class="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/25 text-white font-semibold text-xs flex items-center gap-1.5 backdrop-blur-sm transition">
@@ -712,6 +778,520 @@
             `).join('')}
           </div>
         `}
+      `;
+    }
+
+    // FITUR BARU: ASISTEN AI PEMBUAT RPM (RENCANA PEMBELAJARAN MENDALAM)
+    function calculateRpmTime(jp, minutesPerJp, meetings) {
+      const jpVal = parseFloat(jp);
+      const minVal = parseFloat(minutesPerJp);
+      const meetVal = parseInt(meetings, 10);
+
+      if (isNaN(jpVal) || jpVal <= 0 || isNaN(minVal) || minVal <= 0) {
+        return {
+          valid: false,
+          totalMinutes: 0,
+          hoursText: 'Belum dapat dihitung (isi Alokasi JP dan Menit per JP)',
+          perMeetingText: '-'
+        };
+      }
+
+      const totalMinutes = jpVal * minVal;
+      const hours = Math.floor(totalMinutes / 60);
+      const remMinutes = Math.round(totalMinutes % 60);
+      const hoursText = `${totalMinutes} Menit (${hours > 0 ? hours + ' Jam ' : ''}${remMinutes > 0 ? remMinutes + ' Menit' : ''})`.trim();
+
+      let perMeetingText = '-';
+      if (!isNaN(meetVal) && meetVal > 0) {
+        const minPerMeet = Math.round(totalMinutes / meetVal);
+        const jpPerMeet = (jpVal / meetVal).toFixed(1).replace(/\.0$/, '');
+        perMeetingText = `${jpPerMeet} JP (${minPerMeet} menit) / pertemuan`;
+      }
+
+      return {
+        valid: true,
+        totalMinutes,
+        hoursText,
+        perMeetingText
+      };
+    }
+
+    function renderRpmAI() {
+      const step = state.rpmActiveStep || 1;
+      const f = state.rpmCurrentForm || createEmptyRpmForm();
+      const idn = f.identitas || {};
+      const kar = f.karakteristik || {};
+      const kon = f.kondisi || {};
+      const cp = f.referensi_cp || {};
+      const pref = f.preferensi || {};
+
+      const timeCalc = calculateRpmTime(idn.jp_total, idn.minutes_per_jp, idn.meeting_count);
+
+      const stepsMeta = [
+        { no: 1, title: '1. Identitas', desc: 'Satuan pendidikan, mapel & waktu' },
+        { no: 2, title: '2. Karakteristik Murid', desc: 'Pengetahuan awal, minat & dukungan' },
+        { no: 3, title: '3. Kondisi Pembelajaran', desc: 'Sarana, teknologi & konteks nyata' },
+        { no: 4, title: '4. Referensi CP', desc: 'Teks CP, elemen & dokumen resmi' },
+        { no: 5, title: '5. Preferensi Guru', desc: 'TP awal, strategi & tinjauan data' }
+      ];
+
+      const checkEmptyBadge = (val) => {
+        if (val === undefined || val === null || String(val).trim() === '') {
+          return `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">Belum diisi (Tidak diasumsikan sistem)</span>`;
+        }
+        return `<span class="text-slate-800 font-medium whitespace-pre-line">${String(val).replace(/</g, '&lt;')}</span>`;
+      };
+
+      return `
+        <!-- Header Banner RPM -->
+        <div class="bg-gradient-to-r from-[#072B7A] via-[#0A369D] to-[#041745] rounded-3xl p-6 text-white shadow-lg relative overflow-hidden">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
+            <div class="space-y-1.5">
+              <div class="inline-flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-widest text-[#FBBF24] bg-white/10 px-3 py-1 rounded-full">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                <span>Asisten AI Pembuat RPM • Tahap Input & Perencanaan</span>
+              </div>
+              <h3 class="text-xl sm:text-2xl font-extrabold tracking-tight">Rencana Pembelajaran Mendalam (RPM)</h3>
+              <p class="text-xs text-blue-100 max-w-3xl leading-relaxed">
+                Lengkapi formulir konteks pembelajaran secara bertahap. Data yang belum Anda isi akan ditandai sebagai <em>belum diisi</em> dan tidak akan dikarang atau diasumsikan sebagai fakta oleh sistem.
+              </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+              <button type="button" onclick="window.app.fillRpmFromProfile()"
+                class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition">
+                <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+                <span>Isi Cepat Identitas dari Profil</span>
+              </button>
+              <button type="button" onclick="window.app.resetRpmForm()"
+                class="px-3.5 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/30 text-rose-100 font-bold text-xs flex items-center gap-1.5 transition">
+                <i data-lucide="file-plus" class="w-3.5 h-3.5"></i>
+                <span>Formulir Baru</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stepper Navigasi 5 Kelompok -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm">
+          <div class="grid grid-cols-1 sm:grid-cols-5 gap-2">
+            ${stepsMeta.map(s => {
+              const isCurrent = s.no === step;
+              const isPassed = s.no < step;
+              return `
+                <button type="button" onclick="window.app.goToRpmStep(${s.no})"
+                  class="p-3 rounded-xl border text-left transition flex flex-col justify-between ${
+                    isCurrent
+                      ? 'bg-[#072B7A] text-white border-[#072B7A] shadow-md'
+                      : isPassed
+                        ? 'bg-emerald-50/70 text-emerald-950 border-emerald-200 hover:bg-emerald-100/70'
+                        : 'bg-slate-50 text-slate-600 border-slate-200/70 hover:bg-slate-100'
+                  }">
+                  <div class="flex items-center justify-between w-full mb-1">
+                    <span class="text-xs font-extrabold">${s.title}</span>
+                    ${isPassed ? `<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600 shrink-0"></i>` : ''}
+                  </div>
+                  <span class="text-[10px] ${isCurrent ? 'text-blue-200' : 'text-slate-400'} leading-tight">${s.desc}</span>
+                </button>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- Area Formulir Utama & Sidebar Draf -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          <!-- Kolom Kiri: Formulir Bertahap (8 Kolom) -->
+          <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-5">
+            <form id="rpm-step-form" onsubmit="event.preventDefault(); window.app.saveRpmDraft();">
+              <!-- KELOMPOK 1: IDENTITAS -->
+              <div class="${step === 1 ? 'block' : 'hidden'} space-y-4">
+                <div class="border-b border-slate-100 pb-3">
+                  <span class="text-[11px] font-extrabold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full">Kelompok 1 dari 5</span>
+                  <h4 class="text-base font-extrabold text-slate-900 mt-1">Identitas & Alokasi Waktu Pembelajaran</h4>
+                  <p class="text-xs text-slate-500">Kosongkan kolom yang belum pasti. Sistem tidak akan menganggap kolom kosong sebagai fakta.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Satuan Pendidikan</label>
+                    <input type="text" id="rpm-school_name" value="${idn.school_name || ''}" oninput="window.app.syncRpmInputs()"
+                      placeholder="Contoh: SMP Negeri 1 Bandar Lampung"
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 outline-none" />
+                  </div>
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Nama Guru</label>
+                    <input type="text" id="rpm-teacher_name" value="${idn.teacher_name || ''}" oninput="window.app.syncRpmInputs()"
+                      placeholder="Contoh: Budi Santoso, S.Kom."
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 outline-none" />
+                  </div>
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Tahun Ajaran</label>
+                    <input type="text" id="rpm-academic_year" value="${idn.academic_year || ''}" oninput="window.app.syncRpmInputs()"
+                      placeholder="Contoh: 2026/2027"
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 outline-none" />
+                  </div>
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Semester</label>
+                    <select id="rpm-semester" onchange="window.app.syncRpmInputs()"
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white focus:border-blue-600 outline-none">
+                      <option value="" ${!idn.semester ? 'selected' : ''}>-- Pilih Semester (Belum Diisi) --</option>
+                      <option value="Ganjil" ${idn.semester === 'Ganjil' ? 'selected' : ''}>Ganjil</option>
+                      <option value="Genap" ${idn.semester === 'Genap' ? 'selected' : ''}>Genap</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Mata Pelajaran</label>
+                    <input type="text" id="rpm-subject_name" value="${idn.subject_name || ''}" oninput="window.app.syncRpmInputs()"
+                      placeholder="Contoh: Informatika"
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 outline-none" />
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label class="font-bold text-slate-700 block mb-1">Fase</label>
+                      <select id="rpm-phase" onchange="window.app.syncRpmInputs()"
+                        class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-white focus:border-blue-600 outline-none">
+                        <option value="" ${!idn.phase ? 'selected' : ''}>-- Pilih --</option>
+                        <option value="Fase A" ${idn.phase === 'Fase A' ? 'selected' : ''}>Fase A</option>
+                        <option value="Fase B" ${idn.phase === 'Fase B' ? 'selected' : ''}>Fase B</option>
+                        <option value="Fase C" ${idn.phase === 'Fase C' ? 'selected' : ''}>Fase C</option>
+                        <option value="Fase D" ${idn.phase === 'Fase D' ? 'selected' : ''}>Fase D</option>
+                        <option value="Fase E" ${idn.phase === 'Fase E' ? 'selected' : ''}>Fase E</option>
+                        <option value="Fase F" ${idn.phase === 'Fase F' ? 'selected' : ''}>Fase F</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="font-bold text-slate-700 block mb-1">Kelas</label>
+                      <input type="text" id="rpm-grade_level" value="${idn.grade_level || ''}" oninput="window.app.syncRpmInputs()"
+                        placeholder="Contoh: IX / 9"
+                        class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 outline-none" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="text-xs">
+                  <label class="font-bold text-slate-700 block mb-1">Topik / Materi Pembelajaran</label>
+                  <input type="text" id="rpm-topic" value="${idn.topic || ''}" oninput="window.app.syncRpmInputs()"
+                    placeholder="Contoh: Berpikir Komputasional & Dekomposisi Persoalan"
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 outline-none" />
+                </div>
+
+                <!-- Kalkulator Waktu Otomatis -->
+                <div class="p-4 rounded-2xl bg-blue-50/70 border border-blue-200/80 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-extrabold text-blue-950 flex items-center gap-1.5">
+                      <i data-lucide="clock" class="w-4 h-4 text-blue-700"></i>
+                      <span>Alokasi Waktu & Kalkulasi Total Durasi</span>
+                    </span>
+                    <span class="text-[11px] font-bold text-blue-700">Otomatis: JP × Menit per JP</span>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div>
+                      <label class="font-bold text-slate-700 block mb-1">Jumlah Pertemuan</label>
+                      <input type="number" min="1" step="1" id="rpm-meeting_count" value="${idn.meeting_count || ''}" oninput="window.app.syncRpmInputs()"
+                        placeholder="Contoh: 2"
+                        class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:border-blue-600 outline-none" />
+                    </div>
+                    <div>
+                      <label class="font-bold text-slate-700 block mb-1">Total Alokasi Waktu (JP)</label>
+                      <input type="number" min="1" step="1" id="rpm-jp_total" value="${idn.jp_total || ''}" oninput="window.app.syncRpmInputs()"
+                        placeholder="Contoh: 4"
+                        class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:border-blue-600 outline-none" />
+                    </div>
+                    <div>
+                      <label class="font-bold text-slate-700 block mb-1">Durasi Menit per 1 JP</label>
+                      <input type="number" min="1" step="1" id="rpm-minutes_per_jp" value="${idn.minutes_per_jp || ''}" oninput="window.app.syncRpmInputs()"
+                        placeholder="Contoh: 40"
+                        class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white focus:border-blue-600 outline-none" />
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 text-xs">
+                    <div class="p-3 rounded-xl bg-white border border-blue-200/60 flex items-center justify-between">
+                      <span class="text-slate-500 font-semibold">Total Waktu Keseluruhan:</span>
+                      <strong id="rpm-calc-total" class="text-blue-900 font-extrabold">${timeCalc.hoursText}</strong>
+                    </div>
+                    <div class="p-3 rounded-xl bg-white border border-blue-200/60 flex items-center justify-between">
+                      <span class="text-slate-500 font-semibold">Rata-rata per Pertemuan:</span>
+                      <strong id="rpm-calc-per-meeting" class="text-emerald-800 font-extrabold">${timeCalc.perMeetingText}</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- KELOMPOK 2: KARAKTERISTIK MURID -->
+              <div class="${step === 2 ? 'block' : 'hidden'} space-y-4">
+                <div class="border-b border-slate-100 pb-3">
+                  <span class="text-[11px] font-extrabold uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full">Kelompok 2 dari 5</span>
+                  <h4 class="text-base font-extrabold text-slate-900 mt-1">Karakteristik & Kebutuhan Belajar Murid</h4>
+                  <p class="text-xs text-slate-500">Tuliskan kondisi nyata murid di kelas Anda. Biarkan kosong jika belum teridentifikasi.</p>
+                </div>
+
+                <div class="space-y-3.5 text-xs">
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Pengetahuan Awal Murid</label>
+                    <textarea id="rpm-prior_knowledge" rows="3" oninput="window.app.syncRpmInputs()"
+                      placeholder="Apa yang sudah diketahui atau dikuasai murid terkait topik ini? (Kosongkan jika belum ada data)"
+                      class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${kar.prior_knowledge || ''}</textarea>
+                  </div>
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Minat & Ketertarikan Murid</label>
+                    <textarea id="rpm-student_interests" rows="2" oninput="window.app.syncRpmInputs()"
+                      placeholder="Contoh: Menyukai aktivitas visual, permainan kuis kelompok, atau topik media sosial..."
+                      class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${kar.student_interests || ''}</textarea>
+                  </div>
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Kebutuhan Belajar Murid</label>
+                    <textarea id="rpm-learning_needs" rows="2" oninput="window.app.syncRpmInputs()"
+                      placeholder="Contoh: Perlu contoh konkret sebelum masuk ke abstraksi/rumus, variasi aktivitas kinestetik & diskusi..."
+                      class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${kar.learning_needs || ''}</textarea>
+                  </div>
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Kebutuhan Dukungan Khusus / Perancah (Scaffolding)</label>
+                    <textarea id="rpm-support_needs" rows="2" oninput="window.app.syncRpmInputs()"
+                      placeholder="Contoh: 3 murid memerlukan panduan langkah demi langkah tertulis dan pendampingan sebaya..."
+                      class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${kar.support_needs || ''}</textarea>
+                  </div>
+                </div>
+              </div>
+
+              <!-- KELOMPOK 3: KONDISI PEMBELAJARAN -->
+              <div class="${step === 3 ? 'block' : 'hidden'} space-y-4">
+                <div class="border-b border-slate-100 pb-3">
+                  <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">Kelompok 3 dari 5</span>
+                  <h4 class="text-base font-extrabold text-slate-900 mt-1">Kondisi Pembelajaran & Konteks Lingkungan</h4>
+                  <p class="text-xs text-slate-500">Informasi sarana dan konteks keseharian murid agar rancangan kegiatan relevan dan realistis.</p>
+                </div>
+
+                <div class="space-y-3.5 text-xs">
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Sarana & Prasarana Kelas</label>
+                    <textarea id="rpm-facilities" rows="2" oninput="window.app.syncRpmInputs()"
+                      placeholder="Contoh: Papan tulis, proyektor, meja kursi yang dapat diatur berkelompok, kertas plano..."
+                      class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${kon.facilities || ''}</textarea>
+                  </div>
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Lingkungan Belajar</label>
+                    <textarea id="rpm-environment" rows="2" oninput="window.app.syncRpmInputs()"
+                      placeholder="Contoh: Ruang kelas reguler dengan 32 murid, halaman sekolah, atau laboratorium..."
+                      class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${kon.environment || ''}</textarea>
+                  </div>
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Ketersediaan Teknologi & Internet</label>
+                    <textarea id="rpm-technology_availability" rows="2" oninput="window.app.syncRpmInputs()"
+                      placeholder="Contoh: Lab komputer 15 unit (berbagi berpasangan) atau tanpa perangkat gawai murid (unplugged)..."
+                      class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${kon.technology_availability || ''}</textarea>
+                  </div>
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Konteks Kehidupan Sehari-hari Murid</label>
+                    <textarea id="rpm-daily_life_context" rows="3" oninput="window.app.syncRpmInputs()"
+                      placeholder="Contoh: Lingkungan perkotaan/pedesaan, kebiasaan berbelanja di kantin, antrean transportasi, pengelolaan sampah sekolah..."
+                      class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${kon.daily_life_context || ''}</textarea>
+                  </div>
+                </div>
+              </div>
+
+              <!-- KELOMPOK 4: REFERENSI CP -->
+              <div class="${step === 4 ? 'block' : 'hidden'} space-y-4">
+                <div class="border-b border-slate-100 pb-3">
+                  <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">Kelompok 4 dari 5</span>
+                  <h4 class="text-base font-extrabold text-slate-900 mt-1">Referensi Capaian Pembelajaran (CP)</h4>
+                  <p class="text-xs text-slate-500">Masukkan kutipan CP dan sumber dokumennya. Data yang tidak diisi tidak akan diklaim sebagai dokumen resmi.</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 text-xs">
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Mata Pelajaran (CP)</label>
+                    <input type="text" id="rpm-cp_subject" value="${cp.subject_name || idn.subject_name || ''}" oninput="window.app.syncRpmInputs()"
+                      placeholder="Contoh: Informatika"
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 outline-none" />
+                  </div>
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Fase (CP)</label>
+                    <input type="text" id="rpm-cp_phase" value="${cp.phase || idn.phase || ''}" oninput="window.app.syncRpmInputs()"
+                      placeholder="Contoh: Fase D"
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 outline-none" />
+                  </div>
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Elemen CP (Jika Tersedia)</label>
+                    <input type="text" id="rpm-cp_element" value="${cp.cp_element || ''}" oninput="window.app.syncRpmInputs()"
+                      placeholder="Contoh: Berpikir Komputasional"
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 outline-none" />
+                  </div>
+                </div>
+
+                <div class="text-xs">
+                  <label class="font-bold text-slate-700 block mb-1">Teks Capaian Pembelajaran (CP)</label>
+                  <textarea id="rpm-cp_text" rows="4" oninput="window.app.syncRpmInputs()"
+                    placeholder="Tempelkan rumusan teks CP sesuai referensi yang Anda miliki..."
+                    class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${cp.cp_text || ''}</textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 text-xs">
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Judul Sumber Dokumen</label>
+                    <input type="text" id="rpm-source_title" value="${cp.source_title || ''}" oninput="window.app.syncRpmInputs()"
+                      placeholder="Contoh: Keputusan Kepala BSKAP"
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 outline-none" />
+                  </div>
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Nomor / Tahun Dokumen (Jika Diketahui)</label>
+                    <input type="text" id="rpm-doc_number_year" value="${cp.doc_number_year || ''}" oninput="window.app.syncRpmInputs()"
+                      placeholder="Contoh: Nomor 032/H/KR/2024"
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 outline-none" />
+                  </div>
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">URL Resmi (Opsional)</label>
+                    <input type="url" id="rpm-official_url" value="${cp.official_url || ''}" oninput="window.app.syncRpmInputs()"
+                      placeholder="https://kurikulum.kemdikbud.go.id/..."
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 outline-none" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- KELOMPOK 5: PREFERENSI GURU & RINGKASAN FAKTA INPUT -->
+              <div class="${step === 5 ? 'block' : 'hidden'} space-y-4">
+                <div class="border-b border-slate-100 pb-3">
+                  <span class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full">Kelompok 5 dari 5</span>
+                  <h4 class="text-base font-extrabold text-slate-900 mt-1">Preferensi Guru & Pemeriksaan Kelengkapan Input</h4>
+                  <p class="text-xs text-slate-500">Tambahkan preferensi strategi mengajar Anda, lalu periksa status keterisian data sebelum menyimpan draf.</p>
+                </div>
+
+                <div class="space-y-3.5 text-xs">
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Tujuan Pembelajaran Awal (Jika Ada)</label>
+                    <textarea id="rpm-initial_tp" rows="3" oninput="window.app.syncRpmInputs()"
+                      placeholder="Tuliskan draf Tujuan Pembelajaran jika Anda sudah memilikinya, atau kosongkan..."
+                      class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${pref.initial_tp || ''}</textarea>
+                  </div>
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Strategi / Model Pembelajaran yang Diinginkan</label>
+                    <textarea id="rpm-learning_strategy" rows="2" oninput="window.app.syncRpmInputs()"
+                      placeholder="Contoh: Problem-Based Learning (PBL), diskusi studi kasus, pembelajaran berdiferensiasi..."
+                      class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${pref.learning_strategy || ''}</textarea>
+                  </div>
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">Catatan Khusus Guru</label>
+                    <textarea id="rpm-special_notes" rows="2" oninput="window.app.syncRpmInputs()"
+                      placeholder="Catatan tambahan, batasan waktu, atau penekanan karakter..."
+                      class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${pref.special_notes || ''}</textarea>
+                  </div>
+                </div>
+
+                <!-- Ringkasan Verifikasi Input (Anti-Asumsi Otomatis) -->
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-3 text-xs">
+                  <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <span class="font-extrabold text-slate-900 flex items-center gap-1.5">
+                      <i data-lucide="clipboard-list" class="w-4 h-4 text-blue-700"></i>
+                      <span>Ringkasan Status Input (Transparansi Data)</span>
+                    </span>
+                    <span class="text-[10px] font-bold text-slate-500">Data kosong tidak dianggap fakta</span>
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div><span class="text-slate-400 block text-[10px]">Satuan Pendidikan:</span> ${checkEmptyBadge(idn.school_name)}</div>
+                    <div><span class="text-slate-400 block text-[10px]">Mata Pelajaran / Kelas / Fase:</span> ${checkEmptyBadge([idn.subject_name, idn.grade_level, idn.phase].filter(Boolean).join(' • '))}</div>
+                    <div><span class="text-slate-400 block text-[10px]">Topik Materi:</span> ${checkEmptyBadge(idn.topic)}</div>
+                    <div><span class="text-slate-400 block text-[10px]">Total Waktu Terhitung:</span> <strong class="text-blue-900">${timeCalc.hoursText}</strong></div>
+                    <div><span class="text-slate-400 block text-[10px]">Pengetahuan Awal Murid:</span> ${checkEmptyBadge(kar.prior_knowledge)}</div>
+                    <div><span class="text-slate-400 block text-[10px]">Ketersediaan Teknologi:</span> ${checkEmptyBadge(kon.technology_availability)}</div>
+                    <div class="sm:col-span-2"><span class="text-slate-400 block text-[10px]">Teks Referensi CP:</span> ${checkEmptyBadge(cp.cp_text)}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- TOMBOL AKSI FORMULIR: KEMBALI, SIMPAN DRAF, LANJUTKAN -->
+              <div class="pt-5 mt-5 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  ${step > 1 ? `
+                    <button type="button" onclick="window.app.prevRpmStep()"
+                      class="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition">
+                      <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                      <span>Kembali</span>
+                    </button>
+                  ` : `
+                    <span class="text-[11px] text-slate-400 font-medium">Langkah 1 dari 5</span>
+                  `}
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2.5">
+                  <button type="button" onclick="window.app.saveRpmDraft()"
+                    class="px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs shadow-sm flex items-center gap-1.5 transition">
+                    <i data-lucide="save" class="w-4 h-4"></i>
+                    <span>Simpan Draf</span>
+                  </button>
+
+                  ${step < 5 ? `
+                    <button type="button" onclick="window.app.nextRpmStep()"
+                      class="px-5 py-2.5 rounded-xl bg-[#072B7A] hover:bg-blue-800 text-white font-bold text-xs shadow-md flex items-center gap-1.5 transition">
+                      <span>Lanjutkan</span>
+                      <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                  ` : `
+                    <button type="button" onclick="window.app.finishRpmInputStage()"
+                      class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md flex items-center gap-1.5 transition">
+                      <i data-lucide="check-circle" class="w-4 h-4"></i>
+                      <span>Lanjutkan (Selesai Input)</span>
+                    </button>
+                  `}
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- Kolom Kanan: Daftar Draf RPM Tersimpan & Info Kalkulasi (4 Kolom) -->
+          <div class="lg:col-span-4 space-y-4">
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-3">
+              <div class="flex items-center justify-between">
+                <h4 class="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                  <i data-lucide="folder-clock" class="w-4 h-4 text-blue-700"></i>
+                  <span>Draf RPM Tersimpan (${state.rpm_drafts.length})</span>
+                </h4>
+              </div>
+              <p class="text-[11px] text-slate-500 leading-relaxed">
+                Klik salah satu draf di bawah untuk memuat kembali isian ke dalam formulir dan melanjutkan pengeditan.
+              </p>
+
+              ${state.rpm_drafts.length === 0 ? `
+                <div class="py-8 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  Belum ada draf RPM yang disimpan.
+                </div>
+              ` : `
+                <div class="space-y-2.5 max-h-96 overflow-y-auto custom-scroll pr-1">
+                  ${state.rpm_drafts.map(d => {
+                    const fd = d.form_data || {};
+                    const idnD = fd.identitas || {};
+                    const calcD = calculateRpmTime(idnD.jp_total, idnD.minutes_per_jp, idnD.meeting_count);
+                    const isSelected = state.rpmCurrentForm?.id === d.id;
+                    return `
+                      <div class="p-3.5 rounded-xl border transition ${isSelected ? 'bg-blue-50/70 border-blue-400' : 'bg-slate-50 border-slate-200/70 hover:border-slate-300'} text-xs space-y-2">
+                        <div class="flex items-start justify-between gap-2">
+                          <div>
+                            <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-900 font-extrabold text-[10px]">
+                              ${d.subject_name || 'Mapel Belum Diisi'} • ${d.grade_level ? 'Kelas ' + d.grade_level : 'Kelas -'}
+                            </span>
+                            <h5 class="font-extrabold text-slate-900 mt-1">${d.topic || '(Topik Belum Diisi)'}</h5>
+                          </div>
+                          <button type="button" onclick="window.app.deleteRpmDraft('${d.id}')" class="text-rose-500 hover:text-rose-700 p-1" title="Hapus Draf">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                          </button>
+                        </div>
+                        <div class="text-[11px] text-slate-500 flex items-center justify-between">
+                          <span>Waktu: <strong>${calcD.valid ? calcD.totalMinutes + ' Menit' : 'Belum dihitung'}</strong></span>
+                          <span>Tahap ${d.current_step || 1}/5</span>
+                        </div>
+                        <div class="pt-1 flex items-center gap-2">
+                          <button type="button" onclick="window.app.loadRpmDraft('${d.id}')"
+                            class="w-full py-1.5 px-3 rounded-lg bg-white hover:bg-blue-600 hover:text-white text-blue-800 border border-blue-200 font-bold text-[11px] transition">
+                            Buka & Edit Draf
+                          </button>
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              `}
+            </div>
+          </div>
+        </div>
       `;
     }
 
@@ -1048,6 +1628,7 @@
       const map = {
         dashboard: renderDashboard,
         persiapan: renderPersiapan,
+        rpm_ai: renderRpmAI,
         kelas: renderKelas,
         asesmen: renderAsesmen,
         nilai: renderNilai,
@@ -1062,6 +1643,199 @@
     window.app = {
       switchTab,
       closeModal,
+
+      // LOGIKA FORMULIR ASISTEN AI PEMBUAT RPM (TAHAP 1: INPUT & DRAF)
+      syncRpmInputs() {
+        const getVal = (id) => {
+          const el = document.getElementById(id);
+          return el ? el.value : '';
+        };
+
+        if (!state.rpmCurrentForm) state.rpmCurrentForm = createEmptyRpmForm();
+
+        state.rpmCurrentForm.identitas = {
+          school_name: getVal('rpm-school_name'),
+          teacher_name: getVal('rpm-teacher_name'),
+          academic_year: getVal('rpm-academic_year'),
+          semester: getVal('rpm-semester'),
+          subject_name: getVal('rpm-subject_name'),
+          phase: getVal('rpm-phase'),
+          grade_level: getVal('rpm-grade_level'),
+          topic: getVal('rpm-topic'),
+          meeting_count: getVal('rpm-meeting_count'),
+          jp_total: getVal('rpm-jp_total'),
+          minutes_per_jp: getVal('rpm-minutes_per_jp')
+        };
+
+        state.rpmCurrentForm.karakteristik = {
+          prior_knowledge: getVal('rpm-prior_knowledge'),
+          student_interests: getVal('rpm-student_interests'),
+          learning_needs: getVal('rpm-learning_needs'),
+          support_needs: getVal('rpm-support_needs')
+        };
+
+        state.rpmCurrentForm.kondisi = {
+          facilities: getVal('rpm-facilities'),
+          environment: getVal('rpm-environment'),
+          technology_availability: getVal('rpm-technology_availability'),
+          daily_life_context: getVal('rpm-daily_life_context')
+        };
+
+        state.rpmCurrentForm.referensi_cp = {
+          subject_name: getVal('rpm-cp_subject'),
+          phase: getVal('rpm-cp_phase'),
+          cp_element: getVal('rpm-cp_element'),
+          cp_text: getVal('rpm-cp_text'),
+          source_title: getVal('rpm-source_title'),
+          doc_number_year: getVal('rpm-doc_number_year'),
+          official_url: getVal('rpm-official_url')
+        };
+
+        state.rpmCurrentForm.preferensi = {
+          initial_tp: getVal('rpm-initial_tp'),
+          learning_strategy: getVal('rpm-learning_strategy'),
+          special_notes: getVal('rpm-special_notes')
+        };
+
+        // Perbarui tampilan kalkulasi total waktu secara langsung
+        const calc = calculateRpmTime(
+          state.rpmCurrentForm.identitas.jp_total,
+          state.rpmCurrentForm.identitas.minutes_per_jp,
+          state.rpmCurrentForm.identitas.meeting_count
+        );
+        const totalEl = document.getElementById('rpm-calc-total');
+        const meetEl = document.getElementById('rpm-calc-per-meeting');
+        if (totalEl) totalEl.textContent = calc.hoursText;
+        if (meetEl) meetEl.textContent = calc.perMeetingText;
+      },
+
+      goToRpmStep(stepNumber) {
+        this.syncRpmInputs();
+        state.rpmActiveStep = Math.max(1, Math.min(5, Number(stepNumber) || 1));
+        renderActiveModule();
+      },
+
+      nextRpmStep() {
+        this.syncRpmInputs();
+        if (state.rpmActiveStep < 5) {
+          state.rpmActiveStep += 1;
+          renderActiveModule();
+        }
+      },
+
+      prevRpmStep() {
+        this.syncRpmInputs();
+        if (state.rpmActiveStep > 1) {
+          state.rpmActiveStep -= 1;
+          renderActiveModule();
+        }
+      },
+
+      fillRpmFromProfile() {
+        this.syncRpmInputs();
+        const t = state.teacher || {};
+        state.rpmCurrentForm.identitas.school_name = t.school_name || '';
+        state.rpmCurrentForm.identitas.teacher_name = t.full_name || '';
+        state.rpmCurrentForm.identitas.academic_year = t.academic_year || '';
+        state.rpmCurrentForm.identitas.semester = t.semester || '';
+        state.rpmCurrentForm.identitas.subject_name = t.subject_name || '';
+        if (!state.rpmCurrentForm.referensi_cp.subject_name) {
+          state.rpmCurrentForm.referensi_cp.subject_name = t.subject_name || '';
+        }
+        renderActiveModule();
+        showToast('Identitas diisi dari Profil Guru. Silakan periksa kembali.');
+      },
+
+      resetRpmForm() {
+        state.rpmCurrentForm = createEmptyRpmForm();
+        state.rpmActiveStep = 1;
+        renderActiveModule();
+        showToast('Formulir RPM baru siap diisi.', 'info');
+      },
+
+      async saveRpmDraft() {
+        this.syncRpmInputs();
+        const f = state.rpmCurrentForm;
+        const draftId = f.id || crypto.randomUUID();
+        f.id = draftId;
+
+        const record = {
+          id: draftId,
+          teacher_id: state.user?.id || 'preview-teacher-1',
+          topic: f.identitas.topic.trim(),
+          subject_name: f.identitas.subject_name.trim(),
+          grade_level: f.identitas.grade_level.trim(),
+          phase: f.identitas.phase.trim(),
+          current_step: state.rpmActiveStep || 1,
+          form_data: structuredClone(f),
+          updated_at: new Date().toISOString()
+        };
+
+        const existingIdx = state.rpm_drafts.findIndex(d => d.id === draftId);
+        if (existingIdx >= 0) {
+          state.rpm_drafts[existingIdx] = record;
+        } else {
+          state.rpm_drafts.unshift(record);
+        }
+
+        if (IS_PREVIEW) {
+          saveLocalState();
+          renderActiveModule();
+          showToast('Draf RPM berhasil disimpan!');
+        } else {
+          try {
+            const { error } = await supabase.from('rpm_drafts').upsert(record);
+            if (error) {
+              // Fallback penyimpanan lokal sementara jika tabel rpm_drafts belum dieksekusi di SQL Supabase
+              localStorage.setItem('ASGURU_RPM_DRAFTS_FALLBACK', JSON.stringify(state.rpm_drafts));
+              saveLocalState();
+              renderActiveModule();
+              showToast('Draf disimpan ke penyimpanan lokal sementara (Jalankan SQL tabel rpm_drafts untuk sinkronisasi cloud).', 'warning');
+              return;
+            }
+            saveLocalState();
+            renderActiveModule();
+            showToast('Draf RPM berhasil disimpan ke database!');
+          } catch (err) {
+            localStorage.setItem('ASGURU_RPM_DRAFTS_FALLBACK', JSON.stringify(state.rpm_drafts));
+            renderActiveModule();
+            showToast('Draf disimpan di memori lokal browser.', 'info');
+          }
+        }
+      },
+
+      loadRpmDraft(draftId) {
+        const found = state.rpm_drafts.find(d => d.id === draftId);
+        if (!found) return;
+        state.rpmCurrentForm = structuredClone(found.form_data || createEmptyRpmForm());
+        state.rpmCurrentForm.id = found.id;
+        state.rpmActiveStep = found.current_step || 1;
+        renderActiveModule();
+        showToast('Draf RPM berhasil dimuat ke formulir.');
+      },
+
+      deleteRpmDraft(draftId) {
+        askConfirm('Hapus Draf RPM?', 'Draf Rencana Pembelajaran Mendalam ini akan dihapus.', async () => {
+          state.rpm_drafts = state.rpm_drafts.filter(d => d.id !== draftId);
+          if (state.rpmCurrentForm?.id === draftId) {
+            state.rpmCurrentForm = createEmptyRpmForm();
+            state.rpmActiveStep = 1;
+          }
+          if (IS_PREVIEW) {
+            saveLocalState();
+          } else {
+            await supabase.from('rpm_drafts').delete().eq('id', draftId);
+            localStorage.setItem('ASGURU_RPM_DRAFTS_FALLBACK', JSON.stringify(state.rpm_drafts));
+          }
+          renderActiveModule();
+          showToast('Draf RPM dihapus.');
+        });
+      },
+
+      async finishRpmInputStage() {
+        await this.saveRpmDraft();
+        showToast('Data input RPM telah disimpan sebagai draf dan siap untuk tahap pemrosesan berikutnya!', 'info');
+      },
 
       selectClass(classId) {
         state.selectedClassId = classId;
