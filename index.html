@@ -361,73 +361,26 @@
       { id: 'pln-4', class_id: 'cls-1', plan_type: 'SAS / PAS', topic: 'Sumatif Akhir Semester Gasal', planned_date: '2026-12-15', status: 'Direncanakan', notes: 'Evaluasi akhir semester gasal' }
     ];
 
-    const RPM_INPUT_TEMPLATE = '';
-
-    const RPM_PROMPT_GUIDE_COPY_TEXT = `Peran: Kamu adalah pakar kurikulum dan pedagogi Indonesia yang menguasai pendekatan Pembelajaran Mendalam (Kemendikdasmen).
-Tugas: Susun Rencana Pembelajaran Mendalam (RPM) yang siap pakai, operasional, dan kontekstual.
-DATA:
-1. Nama satuan pendidikan: [isi]
-2. Nama guru: [isi]
-3. Jenjang pendidikan: [isi]
-4. Mata pelajaran: [isi]
-5. Fase dan kelas: [isi]
-6. Semester dan tahun ajaran: [isi]
-7. Topik atau materi: [isi]
-8. Jumlah pertemuan: [isi]
-9. Alokasi waktu setiap pertemuan: [isi]
-10. Capaian Pembelajaran: [tempelkan kutipan CP dari sumber resmi]
-11. Pengetahuan awal dan kebutuhan belajar murid: [isi]
-12. Sarana, media, dan lingkungan belajar: [isi]
-13. Tujuan pembelajaran : [isi]
-14. Instrumen dan lampiran, Sertakan sesuai kebutuhan :
-   - LKPD dengan petunjuk, tugas, dan hasil yang diharapkan;
-   - soal beserta kunci dan pedoman penskoran;
-   - lembar observasi;
-   - rubrik analitik;
-   - bahan ajar ringkas;
-   - pertanyaan refleksi murid dan guru.
-STRUKTUR RPM:
-1. Identitas
-2. Identifikasi: kesiapan murid, karakteristik materi, dimensi profil lulusan
-3. Desain Pembelajaran: tujuan pembelajaran (ABCD, terukur), lintas disiplin ilmu, topik kontekstual, praktik pedagogis (model/strategi + alasan), kemitraan pembelajaran, lingkungan belajar, pemanfaatan teknologi digital
-4. Pengalaman Belajar per pertemuan, dengan tahapan:
-   - Memahami (berkesadaran & bermakna)
-   - Mengaplikasi (bermakna & menggembirakan)
-   - Merefleksi (berkesadaran)
-   Sertakan awal, inti, penutup, dengan kegiatan guru dan murid, durasi menit, serta pertanyaan pemantik.
-5. Asesmen: awal (diagnostik), proses (formatif, dengan rubrik/instrumen), akhir (sumatif, dengan rubrik 4 level)
-6. Lampiran: LKPD singkat, bahan ajar ringkas, rubrik, dan tindak lanjut (pengayaan & remedial)`;
-
-    const RPM_SYSTEM_INSTRUCTION = `Peran: Kamu adalah pakar kurikulum dan pedagogi Indonesia yang menguasai pendekatan Pembelajaran Mendalam (Kemendikdasmen).
-
-Tugas: Susun Rencana Pembelajaran Mendalam (RPM) yang siap pakai, operasional, dan kontekstual.
-
-DATA:
-- Satuan pendidikan/Kelas/Fase: [SD/SMP/SMA/SMK] / [kelas] / [fase]
-- Mata pelajaran & Topik: [isi]
-- Capaian Pembelajaran (CP): [isi atau "klik panduan ini (https://kurikulum.kemendikdasmen.go.id/file/1753929861_manage_file.pdf)
-- Alokasi waktu: [jumlah pertemuan x menit]
-- Karakteristik murid & konteks sekolah/daerah: [gaya belajar, kemampuan awal, sarana, kearifan lokal]
-- Dimensi Profil Lulusan yang ditekankan: [pilih dari: Keimanan & Ketakwaan, Kewargaan, Penalaran Kritis, Kreativitas, Kolaborasi, Kemandirian, Kesehatan, Komunikasi]
-
-STRUKTUR RPM:
-1. Identitas
-2. Identifikasi: kesiapan murid, karakteristik materi, dimensi profil lulusan
-3. Desain Pembelajaran: tujuan pembelajaran (ABCD, terukur), lintas disiplin ilmu, topik kontekstual, praktik pedagogis (model/strategi + alasan), kemitraan pembelajaran, lingkungan belajar, pemanfaatan teknologi digital
-4. Pengalaman Belajar per pertemuan, dengan tahapan:
-   - Memahami (berkesadaran & bermakna)
-   - Mengaplikasi (bermakna & menggembirakan)
-   - Merefleksi (berkesadaran)
-   Sertakan awal, inti, penutup, dengan kegiatan guru dan murid, durasi menit, serta pertanyaan pemantik.
-5. Asesmen: awal (diagnostik), proses (formatif, dengan rubrik/instrumen), akhir (sumatif, dengan rubrik 4 level)
-6. Lampiran: LKPD singkat, bahan ajar ringkas, rubrik, dan tindak lanjut (pengayaan & remedial)
-
-ATURAN:
-- Pastikan keselarasan: CP → tujuan → kegiatan → asesmen → dimensi profil.
-- Kegiatan konkret dan dapat langsung dilaksanakan; hindari kalimat umum.
-- Hubungkan dengan konteks nyata dan kearifan lokal.
-- Sajikan dalam tabel/poin yang rapi, bahasa Indonesia baku.
-- Jika data kurang, buat asumsi yang masuk akal dan tandai dengan (asumsi).`;
+    const AI_MODELS = [
+      {
+        id: 'Claude AI',
+        name: 'Claude AI',
+        badge: 'Anthropic • Penalaran & Struktur Akademik Mendalam',
+        desc: 'Unggul dalam penyusunan narasi pedagogis yang sistematis, analitis, dan sangat rapi.'
+      },
+      {
+        id: 'Gemini',
+        name: 'Gemini',
+        badge: 'Google • Kontekstual, Cepat & Komprehensif',
+        desc: 'Kuat dalam pemetaan kurikulum, pengayaan konteks nyata, dan variasi instrumen.'
+      },
+      {
+        id: 'ChatGPT',
+        name: 'ChatGPT',
+        badge: 'OpenAI • Kreatif, Operasional & Adaptif',
+        desc: 'Sangat fleksibel merancang skenario aktivitas kelas, studi kasus HOTS, dan LKPD.'
+      }
+    ];
 
     const state = {
       user: null,
@@ -435,8 +388,10 @@ ATURAN:
       selectedClassId: 'cls-1',
       selectedAssessmentId: 'asm-1',
       aiActiveSubTab: 'rpm',
+      selectedAiModel: 'Claude AI',
       aiIsGenerating: false,
-      aiRpmInputText: RPM_INPUT_TEMPLATE,
+      aiRpmInputText: '',
+      aiSoalInputText: '',
       aiGeneratedRpm: null,
       aiGeneratedSoal: null,
       classKkm: 75,
@@ -582,276 +537,472 @@ ATURAN:
       showToast('File Word (.doc) berhasil diunduh!');
     }
 
-    function parseRpmFields(rawText) {
-      const text = String(rawText || '');
-      const cleanVal = (v) => String(v || '').replace(/^\[isi\]$/i, '').replace(/^\[tempelkan kutipan CP dari sumber resmi\]$/i, '').trim();
+    function analyzeTeacherCommand(rawText) {
+      const text = String(rawText || '').trim();
+      const t = state.teacher || {};
 
       const extractLine = (pattern) => {
         const regex = new RegExp(`(?:^|\\n)\\s*(?:\\d+\\.\\s*|[-•*]\\s*)?${pattern}\\s*:\\s*([^\\n]+)`, 'i');
         const m = text.match(regex);
-        return m ? cleanVal(m[1]) : '';
+        return m ? m[1].replace(/^\[.*\]$/i, '').trim() : '';
       };
 
-      const sp1 = extractLine('Nama satuan pendidikan');
-      const guru1 = extractLine('Nama guru');
-      const jenjang1 = extractLine('Jenjang pendidikan');
-      const mapel1 = extractLine('Mata pelajaran');
-      const faseKelas1 = extractLine('Fase dan kelas');
-      const semTa1 = extractLine('Semester dan tahun ajaran');
-      const topik1 = extractLine('Topik atau materi');
-      const jmlPertemuan1 = extractLine('Jumlah pertemuan');
-      const alokasiPertemuan1 = extractLine('Alokasi waktu setiap pertemuan');
-      const cp1 = extractLine('Capaian Pembelajaran');
-      const kar1 = extractLine('Pengetahuan awal dan kebutuhan belajar murid');
-      const sarana1 = extractLine('Sarana,\\s*media,\\s*dan lingkungan belajar');
-      const tp1 = extractLine('Tujuan pembelajaran');
-
-      const spkf = extractLine('Satuan pendidikan[\\/\\s]*Kelas[\\/\\s]*Fase');
-      let sp = sp1, kls = faseKelas1, fse = jenjang1 || 'Fase D';
-      if (!sp && spkf) {
-        const parts = spkf.split('/').map(s => s.trim());
-        sp = parts[0] || '';
-        kls = parts[1] || '';
-        fse = parts[2] || '';
-      }
-
-      const mt = extractLine('Mata pelajaran\\s*&\\s*Topik');
-      let mapel = mapel1, topik = topik1;
-      if (!mapel && !topik && mt) {
-        const parts = mt.split('/').map(s => s.trim());
-        if (parts.length > 1) {
-          mapel = parts[0];
-          topik = parts.slice(1).join(' / ');
-        } else {
-          topik = mt;
+      // Deteksi Mata Pelajaran dari teks bebas maupun terstruktur
+      let mapel = extractLine('(?:Mata\\s*pelajaran|Mapel)');
+      if (!mapel) {
+        const knownSubjects = [
+          'Pendidikan Agama Islam', 'PAI', 'Pendidikan Pancasila', 'PPKn', 'Bahasa Indonesia',
+          'Matematika', 'Ilmu Pengetahuan Alam dan Sosial', 'IPAS', 'Ilmu Pengetahuan Alam', 'IPA',
+          'Ilmu Pengetahuan Sosial', 'IPS', 'Bahasa Inggris', 'PJOK', 'Pendidikan Jasmani',
+          'Informatika', 'TIK', 'Seni Budaya', 'Seni Rupa', 'Seni Musik', 'Prakarya',
+          'Fisika', 'Kimia', 'Biologi', 'Ekonomi', 'Geografi', 'Sosiologi', 'Sejarah',
+          'Bimbingan Konseling', 'Bahasa Daerah', 'Bahasa Lampung', 'Bahasa Jawa', 'Bahasa Sunda'
+        ];
+        for (const s of knownSubjects) {
+          const rgx = new RegExp(`\\b${s}\\b`, 'i');
+          if (rgx.test(text)) {
+            mapel = s;
+            break;
+          }
         }
       }
+      if (!mapel) mapel = t.subject_name || 'Informatika';
 
-      const cpOld = extractLine('Capaian Pembelajaran\\s*\\(CP\\)');
-      const alokasiOld = extractLine('Alokasi waktu');
-      const karOld = extractLine('Karakteristik murid\\s*&\\s*konteks sekolah[\\/\\s]*daerah');
-      const dimensi = extractLine('Dimensi Profil Lulusan yang ditekankan');
+      // Deteksi Kelas, Jenjang, dan Fase
+      let kelasRaw = extractLine('(?:Fase\\s*dan\\s*kelas|Kelas\\s*\\/\\s*Fase|Kelas)');
+      let jenjang = extractLine('(?:Jenjang\\s*pendidikan|Jenjang|Satuan\\s*pendidikan)');
+      let classNum = 9;
 
-      const combinedAlokasi = [jmlPertemuan1, alokasiPertemuan1].filter(Boolean).join(' x ') || alokasiOld;
-      const combinedKar = [kar1, sarana1].filter(Boolean).join('. ') || karOld;
+      const kMatch = (kelasRaw + ' ' + text).match(/kelas\s*(1[0-2]|[1-9]|XII|XI|X|IX|VIII|VII|VI|V|IV|III|II|I)\b/i);
+      if (kMatch) {
+        const romanMap = { I: 1, II: 2, III: 3, IV: 4, V: 5, VI: 6, VII: 7, VIII: 8, IX: 9, X: 10, XI: 11, XII: 12 };
+        const tok = kMatch[1].toUpperCase();
+        classNum = romanMap[tok] || parseInt(tok, 10) || 9;
+      }
+
+      let fase = 'Fase D';
+      if (classNum <= 2) { fase = 'Fase A'; if (!jenjang) jenjang = 'SD/MI'; }
+      else if (classNum <= 4) { fase = 'Fase B'; if (!jenjang) jenjang = 'SD/MI'; }
+      else if (classNum <= 6) { fase = 'Fase C'; if (!jenjang) jenjang = 'SD/MI'; }
+      else if (classNum <= 9) { fase = 'Fase D'; if (!jenjang) jenjang = 'SMP/MTs'; }
+      else if (classNum === 10) { fase = 'Fase E'; if (!jenjang) jenjang = 'SMA/SMK/MA'; }
+      else { fase = 'Fase F'; if (!jenjang) jenjang = 'SMA/SMK/MA'; }
+
+      const fMatch = text.match(/Fase\s*([A-F])\b/i);
+      if (fMatch) fase = `Fase ${fMatch[1].toUpperCase()}`;
+
+      const kelasLabel = kelasRaw || `Kelas ${classNum} (${jenjang})`;
+
+      // Deteksi Topik / Materi secara cerdas dari bahasa alami maupun baris data
+      let topik = extractLine('(?:Topik\\s*atau\\s*materi|Topik\\s*pembelajaran|Materi\\s*pokok|Topik|Materi)');
+      if (!topik) {
+        const naturalTopic = text.match(/(?:tentang|materi|topik|pokok\s+bahasan|bab)\s+["“']?([^"\n,.!?;]+(?:\s+[^"\n,.!?;]+){0,7})["”']?/i);
+        if (naturalTopic && naturalTopic[1]) {
+          topik = naturalTopic[1]
+            .replace(/\b(untuk|pada|kelas|semester|dengan|sebanyak|jumlah|alokasi|model|metode)\b.*$/i, '')
+            .trim();
+        }
+      }
+      if (!topik) {
+        const cleaned = text
+          .replace(/^(tolong\s+)?(buatkan|susunkan|rancangkan|buat|susun)\s+(dokumen\s+|draf\s+)?(rpm|rencana\s+pembelajaran\s+mendalam|modul\s+ajar|rpp|soal|paket\s+soal)\s*/i, '')
+          .split(/[\n.]/)[0]
+          .trim();
+        topik = cleaned.slice(0, 85) || `Konsep & Aplikasi ${mapel}`;
+      }
+
+      // Deteksi Jumlah Pertemuan dan Alokasi Waktu
+      let meetingCount = parseInt(extractLine('Jumlah\\s*pertemuan'), 10);
+      if (isNaN(meetingCount) || meetingCount < 1) {
+        const mMatch = text.match(/(\d+)\s*(?:kali\s*)?pertemuan/i);
+        meetingCount = mMatch ? Math.min(Math.max(parseInt(mMatch[1], 10), 1), 6) : 2;
+      }
+
+      let minutesPerMeeting = 80;
+      const minMatch = text.match(/(\d+)\s*menit/i);
+      const jpMatch = text.match(/(\d+)\s*JP/i);
+      if (minMatch) {
+        const val = parseInt(minMatch[1], 10);
+        minutesPerMeeting = val >= 30 ? val : val * 40;
+      } else if (jpMatch) {
+        const jpVal = parseInt(jpMatch[1], 10);
+        minutesPerMeeting = jpVal * (classNum <= 6 ? 35 : classNum <= 9 ? 40 : 45);
+      }
+      const alokasiLabel = `${meetingCount} Pertemuan (${meetingCount} x ${minutesPerMeeting} Menit)`;
+
+      // Deteksi Model / Strategi Pembelajaran
+      let modelPembelajaran = extractLine('(?:Model\\s*pembelajaran|Strategi|Metode)');
+      if (!modelPembelajaran) {
+        if (/pjbl|project\s*based|berbasis\s*proyek/i.test(text)) modelPembelajaran = 'Project-Based Learning (PjBL) & Kolaborasi Kontekstual';
+        else if (/discovery|penemuan/i.test(text)) modelPembelajaran = 'Discovery Learning & Eksplorasi Terbimbing';
+        else if (/inquiry|inkuiri/i.test(text)) modelPembelajaran = 'Inquiry-Based Learning (Inkuiri Analitis)';
+        else if (/diferensiasi/i.test(text)) modelPembelajaran = 'Pembelajaran Berdiferensiasi & Problem-Based Learning';
+        else modelPembelajaran = 'Problem-Based Learning (PBL) dengan Pendekatan Pembelajaran Mendalam';
+      }
+
+      const cpText = extractLine('(?:Capaian\\s*Pembelajaran|Teks\\s*CP|CP)') ||
+        `Pada akhir ${fase}, peserta didik mampu memahami, menganalisis, dan menerapkan konsep esensial ${topik} pada mata pelajaran ${mapel} untuk memecahkan permasalahan kontekstual secara bernalar kritis, kreatif, dan kolaboratif.`;
+
+      const satuanPendidikan = extractLine('(?:Nama\\s*satuan\\s*pendidikan|Satuan\\s*pendidikan|Sekolah)') || t.school_name || 'SMP Negeri 1 Bandar Lampung';
+      const namaGuru = extractLine('(?:Nama\\s*guru|Guru|Penyusun)') || t.full_name || 'Budi Santoso, S.Kom., Gr.';
+      const semesterTa = extractLine('(?:Semester\\s*dan\\s*tahun\\s*ajaran|Tahun\\s*ajaran)') || `${t.academic_year || '2026/2027'} (${t.semester || 'Ganjil'})`;
+      const karakteristik = extractLine('(?:Pengetahuan\\s*awal.*|Karakteristik.*)') ||
+        `Peserta didik ${kelasLabel} memiliki keragaman kesiapan awal terhadap materi ${topik}, antusias pada aktivitas pemecahan masalah nyata, diskusi kolaboratif, serta eksplorasi studi kasus kontekstual.`;
+      const sarana = extractLine('(?:Sarana.*|Media.*|Fasilitas.*)') ||
+        `Ruang kelas kondusif, papan tulis, lembar kerja (LKPD), media visual/presentasi, serta benda/kasus nyata di lingkungan sekolah.`;
 
       return {
-        satuanPendidikan: sp || (state.teacher?.school_name || 'Satuan Pendidikan (asumsi)'),
-        namaGuru: guru1 || (state.teacher?.full_name || 'Guru Mata Pelajaran'),
-        semesterTa: semTa1 || `${state.teacher?.academic_year || '2026/2027'} / ${state.teacher?.semester || 'Ganjil'}`,
-        kelas: kls || 'Kelas IX (asumsi)',
-        fase: fse || 'Fase D (asumsi)',
-        mataPelajaran: mapel || (state.teacher?.subject_name || 'Informatika (asumsi)'),
-        topik: topik || 'Pembelajaran Kontekstual (asumsi)',
-        cp: cp1 || cpOld || 'Peserta didik menguasai kompetensi esensial materi secara bermakna (asumsi)',
-        alokasi: combinedAlokasi || '2 pertemuan x 80 menit (asumsi)',
-        karakteristik: combinedKar || 'Kemampuan awal beragam, sarana dan lingkungan belajar memadai (asumsi)',
-        tujuanAwal: tp1 || '',
-        dimensi: dimensi || 'Penalaran Kritis, Kolaborasi, Kreativitas'
+        rawText: text,
+        satuanPendidikan,
+        namaGuru,
+        semesterTa,
+        jenjang,
+        kelas: kelasLabel,
+        classNum,
+        fase,
+        mataPelajaran: mapel,
+        topik,
+        meetingCount,
+        minutesPerMeeting,
+        alokasi: alokasiLabel,
+        modelPembelajaran,
+        cp: cpText,
+        karakteristik,
+        sarana
       };
     }
 
-    function generateSmartRpmFallback(userPrompt) {
-      const f = parseRpmFields(userPrompt);
-      const t = state.teacher || {};
+    function generateSmartRpmFallback(userPrompt, aiModel = 'Claude AI') {
+      const f = analyzeTeacherCommand(userPrompt);
+      const pendahuluanMin = Math.max(10, Math.round(f.minutesPerMeeting * 0.15));
+      const penutupMin = Math.max(10, Math.round(f.minutesPerMeeting * 0.15));
+      const intiMin = Math.max(20, f.minutesPerMeeting - pendahuluanMin - penutupMin);
+      const memahamiMin = Math.round(intiMin * 0.35);
+      const mengaplikasiMin = Math.round(intiMin * 0.45);
+      const merefleksiMin = intiMin - memahamiMin - mengaplikasiMin;
 
-      return `
-        <div class="space-y-4">
-          <div class="p-4 bg-white rounded-xl border border-slate-200">
-            <h3 class="font-extrabold text-base text-blue-950 uppercase tracking-tight">RENCANA PEMBELAJARAN MENDALAM (RPM): ${f.topik.toUpperCase()}</h3>
-            <p class="text-[11px] text-slate-500 mt-0.5">${f.mataPelajaran} • ${f.kelas} (${f.fase}) • Pendekatan Pembelajaran Mendalam (Kemendikdasmen)</p>
-          </div>
+      let meetingsHtml = '';
+      for (let m = 1; m <= f.meetingCount; m++) {
+        const subFocus = m === 1
+          ? `Eksplorasi Konsep Fundamental, Identifikasi Masalah & Pemetaan Variabel pada ${f.topik}`
+          : m === f.meetingCount && f.meetingCount > 1
+            ? `Penerapan Solusi Terpadu, Pengujian Kritis, Presentasi Karya & Evaluasi Reflektif ${f.topik}`
+            : `Pendalaman Analisis, Simulasi Pemecahan Kasus & Kolaborasi Tim pada ${f.topik} (Bagian ${m})`;
 
-          <!-- 1. IDENTITAS -->
-          <div class="p-4 bg-white rounded-xl border border-slate-200">
-            <h4 class="font-extrabold text-sm text-blue-900 uppercase border-b pb-2 mb-2.5">1. IDENTITAS</h4>
-            <table class="w-full text-xs border-collapse border border-slate-300">
-              <tbody>
-                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50 w-56">Satuan Pendidikan</td><td class="border border-slate-300 p-2">${f.satuanPendidikan}</td></tr>
-                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Nama Guru</td><td class="border border-slate-300 p-2">${f.namaGuru || t.full_name || 'Budi Santoso, S.Kom.'}</td></tr>
-                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Mata Pelajaran & Topik</td><td class="border border-slate-300 p-2">${f.mataPelajaran} — ${f.topik}</td></tr>
-                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Kelas & Fase</td><td class="border border-slate-300 p-2">${f.kelas} / ${f.fase}</td></tr>
-                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Tahun Ajaran & Semester</td><td class="border border-slate-300 p-2">${f.semesterTa}</td></tr>
-                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Alokasi Waktu</td><td class="border border-slate-300 p-2">${f.alokasi}</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- 2. IDENTIFIKASI -->
-          <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-2.5 text-xs">
-            <h4 class="font-extrabold text-sm text-blue-900 uppercase border-b pb-2">2. IDENTIFIKASI</h4>
-            <ul class="list-disc pl-5 space-y-1.5">
-              <li><strong>Kesiapan Murid:</strong> ${f.karakteristik}. Kesiapan awal murid dipetakan melalui apersepsi dan tanya jawab pemantik awal untuk mendeteksi pemahaman prasyarat.</li>
-              <li><strong>Karakteristik Materi:</strong> Materi <em>${f.topik}</em> berfokus pada penguasaan konsep esensial, kemampuan dekomposisi masalah terstruktur, serta penerapan langsung pada situasi nyata di lingkungan sekolah dan daerah.</li>
-              <li><strong>Dimensi Profil Lulusan yang Ditekankan:</strong> <strong>${f.dimensi}</strong>. Murid menunjukkan perilaku penalaran kritis saat menelaah studi kasus nyata, berkolaborasi secara aktif dalam kelompok kerja, serta menghasilkan ide kreatif yang aplikatif.</li>
-            </ul>
-          </div>
-
-          <!-- 3. DESAIN PEMBELAJARAN -->
-          <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-2.5 text-xs">
-            <h4 class="font-extrabold text-sm text-blue-900 uppercase border-b pb-2">3. DESAIN PEMBELAJARAN</h4>
-            <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
-              <p class="font-bold text-slate-900">Capaian Pembelajaran (CP) Rujukan:</p>
-              <p class="italic text-slate-700">"${f.cp}"</p>
-              <p class="text-[10px] text-slate-500">Rujukan: <a href="https://kurikulum.kemendikdasmen.go.id/file/1753929861_manage_file.pdf" target="_blank" class="text-blue-700 underline font-bold">Panduan CP Resmi Kemendikdasmen</a></p>
-            </div>
-            <div>
-              <p class="font-bold text-slate-900">Tujuan Pembelajaran (Rumusan ABCD & Terukur):</p>
-              <ul class="list-disc pl-5 space-y-1 mt-1">
-                <li><strong>TP1:</strong> Melalui telaah kasus nyata di lingkungan sekolah, murid (Audience) mampu mengidentifikasi pokok persoalan dan memetakan variabel utama (Behavior) pada materi <em>${f.topik}</em> (Condition) dengan akurasi minimal 80% pada LKPD (Degree).</li>
-                <li><strong>TP2:</strong> Melalui diskusi kolaboratif terbimbing, murid (Audience) mampu merancang dan menguji langkah solusi pemecahan masalah (Behavior) terkait <em>${f.topik}</em> (Condition) secara sistematis, logis, dan terverifikasi (Degree).</li>
-              </ul>
-            </div>
-            <ul class="list-disc pl-5 space-y-1">
-              <li><strong>Keterkaitan Lintas Disiplin Ilmu:</strong> Mengintegrasikan penalaran logis matematika, literasi bahasa dalam menyajikan argumen, dan kepekaan sosial terhadap kearifan lokal.</li>
-              <li><strong>Topik Kontekstual & Kearifan Lokal:</strong> Mengangkat isu nyata pengelolaan fasilitas sekolah dan aktivitas keseharian daerah setempat.</li>
-              <li><strong>Praktik Pedagogis:</strong> Problem-Based Learning (PBL) dan pembelajaran kolaboratif kontekstual, dipilih karena mampu memfasilitasi murid berpikir tingkat tinggi secara aktif.</li>
-              <li><strong>Kemitraan & Lingkungan Belajar:</strong> Ruang kelas dan laboratorium yang kondusif, didukung kolaborasi antar-rekan sebaya.</li>
-              <li><strong>Pemanfaatan Teknologi Digital:</strong> Pemanfaatan perangkat digital untuk penelusuran data (dengan alternatif lembar kerja cetak/unplugged bila perangkat terbatas).</li>
-            </ul>
-          </div>
-
-          <!-- 4. PENGALAMAN BELAJAR PER PERTEMUAN -->
+        meetingsHtml += `
           <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-3 text-xs">
-            <h4 class="font-extrabold text-sm text-blue-900 uppercase border-b pb-2">4. PENGALAMAN BELAJAR PER PERTEMUAN</h4>
-            <p class="text-[11px] text-slate-600">Alokasi Waktu: ${f.alokasi}. Tahapan: <strong>Memahami (Berkesadaran & Bermakna)</strong> → <strong>Mengaplikasi (Bermakna & Menggembirakan)</strong> → <strong>Merefleksi (Berkesadaran)</strong>.</p>
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-2">
+              <h4 class="font-extrabold text-sm text-blue-900 uppercase">
+                PERTEMUAN KE-${m}: ${subFocus.toUpperCase()}
+              </h4>
+              <span class="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 font-bold text-[11px]">
+                Alokasi: ${f.minutesPerMeeting} Menit
+              </span>
+            </div>
 
             <table class="w-full text-xs border-collapse border border-slate-300">
               <thead>
                 <tr class="bg-slate-100">
-                  <th class="border border-slate-300 p-2 w-32">Tahap & Durasi</th>
-                  <th class="border border-slate-300 p-2">Aktivitas Guru (Fasilitasi)</th>
-                  <th class="border border-slate-300 p-2">Aktivitas Murid</th>
-                  <th class="border border-slate-300 p-2 w-36">Bukti Belajar</th>
+                  <th class="border border-slate-300 p-2 w-36">Tahap & Pengalaman</th>
+                  <th class="border border-slate-300 p-2">Aktivitas Guru (Fasilitasi & Pertanyaan Pemantik)</th>
+                  <th class="border border-slate-300 p-2">Aktivitas Murid (Konkret & Kolaboratif)</th>
+                  <th class="border border-slate-300 p-2 w-36">Bukti Belajar & Durasi</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td class="border border-slate-300 p-2 font-bold align-top bg-slate-50">
-                    Pendahuluan<br/><span class="text-[10px] font-normal text-slate-500">(15 Menit)</span>
+                    Pendahuluan<br/>
+                    <span class="text-[10px] font-semibold text-blue-700">(Berkesadaran)</span>
                   </td>
                   <td class="border border-slate-300 p-2 align-top space-y-1">
-                    <p>Membuka pembelajaran dengan suasana aman dan hangat. Menyampaikan tujuan pembelajaran (TP1, TP2) dan kriteria keberhasilan.</p>
-                    <p>Mengajukan pertanyaan pemantik: <em>"Bagaimana cara kita memecahkan masalah rumit di sekolah kita dengan cara membaginya menjadi langkah-langkah kecil yang mudah dikerjakan?"</em></p>
+                    <p>1. Mengondisikan kesiapan psikis dan fisik murid, memeriksa kehadiran, serta membangun kesepakatan belajar yang aman dan saling menghargai.</p>
+                    <p>2. Melakukan apersepsi dengan mengaitkan pengalaman nyata murid terhadap fenomena <strong>${f.topik}</strong>.</p>
+                    <p>3. Menyampaikan pertanyaan pemantik spesifik: <em>"Mengapa pemahaman mendalam mengenai ${f.topik} sangat menentukan cara kita mengambil keputusan yang tepat dalam kehidupan sehari-hari?"</em></p>
+                    <p>4. Menyampaikan Tujuan Pembelajaran (TP${m}) dan kriteria keberhasilan yang akan dicapai bersama.</p>
                   </td>
                   <td class="border border-slate-300 p-2 align-top space-y-1">
-                    <p>Merespons pertanyaan pemantik secara aktif, menghubungkan pengalaman belajar sebelumnya dengan topik baru.</p>
-                    <p>Menyimak target dan kriteria keberhasilan yang akan dicapai bersama.</p>
+                    <p>1. Menyiapkan diri secara sadar, menyepakati fokus belajar, dan merespons apersepsi guru.</p>
+                    <p>2. Mengemukakan pendapat awal atas pertanyaan pemantik berdasarkan pengamatan mereka sehari-hari.</p>
+                    <p>3. Mencermati target kompetensi dan indikator keberhasilan pertemuan ke-${m}.</p>
                   </td>
-                  <td class="border border-slate-300 p-2 align-top">Respons lisan murid & catatan kesiapan awal</td>
+                  <td class="border border-slate-300 p-2 align-top">
+                    <div class="font-bold text-slate-900">${pendahuluanMin} Menit</div>
+                    <div class="text-[11px] text-slate-600 mt-1">Respons lisan pemetaan kesiapan awal & catatan antusiasme murid.</div>
+                  </td>
                 </tr>
                 <tr>
                   <td class="border border-slate-300 p-2 font-bold align-top bg-slate-50">
-                    Inti — Memahami<br/><span class="text-[10px] font-normal text-slate-500">(Berkesadaran & Bermakna)<br/>(25 Menit)</span>
+                    Inti — Tahap 1:<br/>Memahami<br/>
+                    <span class="text-[10px] font-semibold text-emerald-700">(Berkesadaran & Bermakna)</span>
                   </td>
                   <td class="border border-slate-300 p-2 align-top space-y-1">
-                    <p>Menyajikan studi kasus kontekstual terkait <strong>${f.topik}</strong> yang terjadi di lingkungan sekitar.</p>
-                    <p>Memandu murid mengidentifikasi komponen inti masalah dan membagikan Lembar Kerja Peserta Didik (LKPD) Bagian 1.</p>
+                    <p>1. Menyajikan stimulus kontekstual berupa kasus/fenomena autentik tentang <strong>${subFocus}</strong>.</p>
+                    <p>2. Memfasilitasi murid melakukan eksplorasi konsep melalui tanya-jawab Sokratik dan pemodelan terstruktur.</p>
+                    <p>3. Membimbing murid mengidentifikasi konsep kunci, istilah penting, serta meluruskan potensi miskonsepsi pada materi <em>${f.topik}</em>.</p>
                   </td>
                   <td class="border border-slate-300 p-2 align-top space-y-1">
-                    <p>Menelaah kasus secara mandiri dan berpasangan, menggarisbawahi informasi kunci, dan memetakan masalah pada LKPD Bagian 1.</p>
+                    <p>1. Mengamati stimulus dan mencatat informasi esensial terkait <strong>${f.topik}</strong>.</p>
+                    <p>2. Menghubungkan konsep baru dengan pengetahuan prasyarat melalui diskusi berpasangan (<em>Think-Pair-Share</em>).</p>
+                    <p>3. Merumuskan peta konsep atau poin pemahaman esensial pada LKPD Bagian 1.</p>
                   </td>
-                  <td class="border border-slate-300 p-2 align-top">Isian LKPD Bagian 1: Pemetaan masalah utama (TP1)</td>
+                  <td class="border border-slate-300 p-2 align-top">
+                    <div class="font-bold text-slate-900">${memahamiMin} Menit</div>
+                    <div class="text-[11px] text-slate-600 mt-1">Catatan analisis konsep & isian LKPD Bagian 1 (TP1).</div>
+                  </td>
                 </tr>
                 <tr>
                   <td class="border border-slate-300 p-2 font-bold align-top bg-slate-50">
-                    Inti — Mengaplikasi<br/><span class="text-[10px] font-normal text-slate-500">(Bermakna & Menggembirakan)<br/>(25 Menit)</span>
+                    Inti — Tahap 2:<br/>Mengaplikasi<br/>
+                    <span class="text-[10px] font-semibold text-purple-700">(Bermakna & Menggembirakan)</span>
                   </td>
                   <td class="border border-slate-300 p-2 align-top space-y-1">
-                    <p>Mengelompokkan murid (4–5 orang) untuk merancang langkah solusi nyata pada LKPD Bagian 2.</p>
-                    <p>Melakukan perancah (*scaffolding*) bagi kelompok yang membutuhkan dukungan bertahap dan memfasilitasi pertukaran ide antarkelompok.</p>
+                    <p>1. Mengorganisasikan murid ke dalam kelompok kolaboratif heterogen (4–5 orang) sesuai sintaks <strong>${f.modelPembelajaran}</strong>.</p>
+                    <p>2. Menugaskan tantangan pemecahan masalah nyata pada LKPD Bagian 2 yang menuntut penerapan langsung prinsip <strong>${f.topik}</strong>.</p>
+                    <p>3. Melakukan observasi formatif dan memberikan perancah (<em>scaffolding</em>) bertahap bagi kelompok yang memerlukan bimbingan.</p>
+                    <p>4. Memfasilitasi sesi gelar karya / presentasi silang yang interaktif dan apresiatif.</p>
                   </td>
                   <td class="border border-slate-300 p-2 align-top space-y-1">
-                    <p>Berdiskusi aktif merumuskan alur solusi pemecahan masalah, menguji logika langkah penyelesaian, dan mempresentasikannya secara singkat.</p>
+                    <p>1. Berkolaborasi secara aktif menganalisis data/kasus, merancang solusi, dan menguji ketepatan argumen kelompok.</p>
+                    <p>2. Menyusun produk hasil kerja/solusi pada LKPD Bagian 2 secara sistematis dan kreatif.</p>
+                    <p>3. Mempresentasikan temuan kelompok serta memberikan tanggapan konstruktif kepada kelompok lain.</p>
                   </td>
-                  <td class="border border-slate-300 p-2 align-top">Rancangan solusi kelompok pada LKPD Bagian 2 (TP2)</td>
+                  <td class="border border-slate-300 p-2 align-top">
+                    <div class="font-bold text-slate-900">${mengaplikasiMin} Menit</div>
+                    <div class="text-[11px] text-slate-600 mt-1">Produk pemecahan masalah kelompok pada LKPD Bagian 2 & performa diskusi (TP2).</div>
+                  </td>
                 </tr>
                 <tr>
                   <td class="border border-slate-300 p-2 font-bold align-top bg-slate-50">
-                    Penutup — Merefleksi<br/><span class="text-[10px] font-normal text-slate-500">(Berkesadaran)<br/>(15 Menit)</span>
+                    Inti — Tahap 3:<br/>Merefleksi<br/>
+                    <span class="text-[10px] font-semibold text-amber-700">(Berkesadaran)</span>
                   </td>
                   <td class="border border-slate-300 p-2 align-top space-y-1">
-                    <p>Memfasilitasi perumusan simpulan pembelajaran bersama dan memberikan umpan balik formatif apresiatif.</p>
-                    <p>Mengajukan pertanyaan refleksi diri: <em>"Strategi belajar mana yang paling berhasil membantumu hari ini? Apa yang ingin kamu perbaiki pada pertemuan berikutnya?"</em></p>
+                    <p>1. Memandu murid meninjau kembali proses berpikir dan strategi yang mereka gunakan saat menyelesaikan masalah <strong>${f.topik}</strong>.</p>
+                    <p>2. Mengajukan pertanyaan metakognitif: <em>"Bagian mana dari ${f.topik} yang sudah kalian kuasai dengan bukti nyata, dan strategi apa yang perlu diperbaiki?"</em></p>
                   </td>
                   <td class="border border-slate-300 p-2 align-top space-y-1">
-                    <p>Menyimpulkan intisari pembelajaran dan mengisi lembar refleksi diri secara jujur dan sadar.</p>
+                    <p>1. Mengevaluasi kelebihan dan kekurangan solusi yang telah dirancang setelah mendapat masukan rekan dan guru.</p>
+                    <p>2. Menuliskan jurnal refleksi singkat mengenai pemahaman baru dan rencana tindak lanjut belajar pribadi.</p>
                   </td>
-                  <td class="border border-slate-300 p-2 align-top">Lembar refleksi murid & simpulan kelas</td>
+                  <td class="border border-slate-300 p-2 align-top">
+                    <div class="font-bold text-slate-900">${merefleksiMin} Menit</div>
+                    <div class="text-[11px] text-slate-600 mt-1">Catatan evaluasi diri & perbaikan argumen pada LKPD (TP3).</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="border border-slate-300 p-2 font-bold align-top bg-slate-50">
+                    Penutup<br/>
+                    <span class="text-[10px] font-semibold text-blue-700">(Bermakna & Menggembirakan)</span>
+                  </td>
+                  <td class="border border-slate-300 p-2 align-top space-y-1">
+                    <p>1. Memfasilitasi murid menyimpulkan intisari pembelajaran pertemuan ke-${m} secara bersama-sama.</p>
+                    <p>2. Memberikan umpan balik penguatan positif atas usaha dan kolaborasi seluruh murid.</p>
+                    <p>3. Menyampaikan agenda atau tantangan kontekstual untuk pertemuan selanjutnya.</p>
+                  </td>
+                  <td class="border border-slate-300 p-2 align-top space-y-1">
+                    <p>1. Merumuskan simpulan akhir pembelajaran tentang <strong>${subFocus}</strong>.</p>
+                    <p>2. Menyimak umpan balik dan menutup kegiatan dengan penuh semangat.</p>
+                  </td>
+                  <td class="border border-slate-300 p-2 align-top">
+                    <div class="font-bold text-slate-900">${penutupMin} Menit</div>
+                    <div class="text-[11px] text-slate-600 mt-1">Simpulan bersama & tiket keluar (<em>exit ticket</em>).</div>
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
+        `;
+      }
 
-          <!-- 5. ASESMEN -->
+      return `
+        <div class="space-y-4">
+          <div class="p-4 bg-white rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-900 uppercase tracking-wider mb-1">
+                Disusun dengan Kecerdasan ${aiModel} • Pembelajaran Mendalam
+              </span>
+              <h3 class="font-extrabold text-base text-blue-950 uppercase tracking-tight">
+                RENCANA PEMBELAJARAN MENDALAM (RPM): ${f.topik.toUpperCase()}
+              </h3>
+              <p class="text-[11px] text-slate-500 mt-0.5">${f.mataPelajaran} • ${f.kelas} (${f.fase}) • ${f.alokasi}</p>
+            </div>
+          </div>
+
+          <!-- 1. IDENTITAS PEMBELAJARAN -->
+          <div class="p-4 bg-white rounded-xl border border-slate-200">
+            <h4 class="font-extrabold text-sm text-blue-900 uppercase border-b pb-2 mb-2.5">1. IDENTITAS PEMBELAJARAN</h4>
+            <table class="w-full text-xs border-collapse border border-slate-300">
+              <tbody>
+                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50 w-56">Satuan Pendidikan</td><td class="border border-slate-300 p-2">${f.satuanPendidikan}</td></tr>
+                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Nama Penyusun / Guru</td><td class="border border-slate-300 p-2">${f.namaGuru}</td></tr>
+                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Mata Pelajaran</td><td class="border border-slate-300 p-2">${f.mataPelajaran}</td></tr>
+                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Topik / Materi Pokok</td><td class="border border-slate-300 p-2 font-bold text-blue-950">${f.topik}</td></tr>
+                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Kelas / Fase / Jenjang</td><td class="border border-slate-300 p-2">${f.kelas} / ${f.fase}</td></tr>
+                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Tahun Ajaran & Semester</td><td class="border border-slate-300 p-2">${f.semesterTa}</td></tr>
+                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Alokasi Waktu</td><td class="border border-slate-300 p-2">${f.alokasi} (Total ${f.meetingCount * f.minutesPerMeeting} Menit)</td></tr>
+                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Model / Pendekatan</td><td class="border border-slate-300 p-2">${f.modelPembelajaran}</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 2. IDENTIFIKASI KESIAPAN MURID, MATERI & PROFIL LULUSAN -->
+          <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-2.5 text-xs">
+            <h4 class="font-extrabold text-sm text-blue-900 uppercase border-b pb-2">2. IDENTIFIKASI PEMBELAJARAN</h4>
+            <ul class="list-disc pl-5 space-y-1.5 leading-relaxed">
+              <li><strong>Kesiapan & Karakteristik Murid:</strong> ${f.karakteristik}</li>
+              <li><strong>Karakteristik & Esensi Materi:</strong> Materi <em>${f.topik}</em> pada mata pelajaran ${f.mataPelajaran} menuntut penguasaan konsep dasar, kemampuan analisis hubungan sebab-akibat/prosedural, serta kecakapan menerapkannya dalam menyelesaikan masalah nyata di sekitar murid.</li>
+              <li><strong>Sarana, Media & Lingkungan Belajar:</strong> ${f.sarana}</li>
+              <li><strong>Dimensi Profil Lulusan yang Dikembangkan:</strong>
+                <ul class="list-circle pl-5 mt-1 space-y-1">
+                  <li><strong>Penalaran Kritis:</strong> Murid menelaah informasi/fakta, mengidentifikasi akar permasalahan pada topik <em>${f.topik}</em>, dan mengambil kesimpulan berbasis bukti.</li>
+                  <li><strong>Kolaborasi:</strong> Murid bekerja sama secara produktif, berbagi peran, dan saling menghargai pendapat saat menyelesaikan tugas kelompok.</li>
+                  <li><strong>Kreativitas & Kemandirian:</strong> Murid merumuskan alternatif solusi yang aplikatif serta bertanggung jawab atas proses dan hasil belajarnya.</li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+
+          <!-- 3. DESAIN PEMBELAJARAN -->
           <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-3 text-xs">
-            <h4 class="font-extrabold text-sm text-blue-900 uppercase border-b pb-2">5. ASESMEN PEMBELAJARAN</h4>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                <span class="font-extrabold text-blue-900 block">a. Asesmen Awal (Diagnostik)</span>
-                <p>Tanya jawab pemantik lisan mengenai pemahaman prasyarat untuk mengelompokkan kesiapan murid sebelum materi inti dimulai.</p>
-              </div>
-              <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                <span class="font-extrabold text-blue-900 block">b. Asesmen Proses (Formatif)</span>
-                <p>Observasi keterlibatan diskusi kelompok dan pemeriksaan ketercapaian isian LKPD Bagian 1–2 disertai umpan balik langsung.</p>
-              </div>
-              <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                <span class="font-extrabold text-blue-900 block">c. Asesmen Akhir (Sumatif)</span>
-                <p>Penilaian produk solusi terstruktur menggunakan Rubrik Analitik 4 Level (Perlu Bimbingan, Cukup, Cakap, Sangat Mahir).</p>
-              </div>
+            <h4 class="font-extrabold text-sm text-blue-900 uppercase border-b pb-2">3. DESAIN PEMBELAJARAN</h4>
+            <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+              <p class="font-bold text-slate-900">Capaian Pembelajaran (CP) Rujukan:</p>
+              <p class="italic text-slate-700 leading-relaxed">"${f.cp}"</p>
             </div>
 
-            <div class="mt-2">
-              <p class="font-bold text-slate-900 mb-1.5">Rubrik Asesmen 4 Level:</p>
+            <div>
+              <p class="font-bold text-slate-900 mb-1">Tujuan Pembelajaran (Terukur & Operasional):</p>
               <table class="w-full text-xs border-collapse border border-slate-300">
                 <thead>
                   <tr class="bg-slate-100">
-                    <th class="border border-slate-300 p-2">Kriteria Penilaian</th>
-                    <th class="border border-slate-300 p-2">Level 1 (Perlu Bimbingan)</th>
-                    <th class="border border-slate-300 p-2">Level 2 (Cukup)</th>
-                    <th class="border border-slate-300 p-2">Level 3 (Cakap)</th>
-                    <th class="border border-slate-300 p-2">Level 4 (Sangat Mahir)</th>
+                    <th class="border border-slate-300 p-2 w-20">Kode TP</th>
+                    <th class="border border-slate-300 p-2">Rumusan Tujuan Pembelajaran (ABCD)</th>
+                    <th class="border border-slate-300 p-2 w-56">Indikator & Bukti Ketercapaian</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td class="border border-slate-300 p-2 font-bold">Identifikasi Masalah (TP1)</td>
-                    <td class="border border-slate-300 p-2">Belum mampu mengenali masalah pokok tanpa bantuan penuh guru.</td>
-                    <td class="border border-slate-300 p-2">Mampu mengenali masalah dengan bantuan pertanyaan penuntun.</td>
-                    <td class="border border-slate-300 p-2">Mampu memetakan seluruh masalah inti secara tepat dan mandiri.</td>
-                    <td class="border border-slate-300 p-2">Mampu memetakan masalah kompleks dan mengaitkan variabel pendukung secara komprehensif.</td>
+                    <td class="border border-slate-300 p-2 font-extrabold text-center text-blue-900">TP1</td>
+                    <td class="border border-slate-300 p-2">Melalui pengamatan studi kasus dan eksplorasi informasi, murid mampu menjelaskan konsep esensial dan mengidentifikasi komponen utama pada materi <strong>${f.topik}</strong> secara tepat dan sistematis.</td>
+                    <td class="border border-slate-300 p-2">Ketepatan pemetaan konsep & identifikasi masalah pada LKPD Bagian 1 (minimal kategori Cakap).</td>
                   </tr>
                   <tr>
-                    <td class="border border-slate-300 p-2 font-bold">Rancangan Solusi (TP2)</td>
-                    <td class="border border-slate-300 p-2">Langkah solusi belum berurutan dan belum logis.</td>
-                    <td class="border border-slate-300 p-2">Langkah solusi sebagian logis namun masih terdapat kekeliruan prosedur.</td>
-                    <td class="border border-slate-300 p-2">Langkah solusi sistematis, logis, dan dapat diuji efektivitasnya.</td>
-                    <td class="border border-slate-300 p-2">Rancangan solusi inovatif, sangat sistematis, teruji, dan efisien.</td>
+                    <td class="border border-slate-300 p-2 font-extrabold text-center text-blue-900">TP2</td>
+                    <td class="border border-slate-300 p-2">Melalui diskusi kolaboratif berbasis masalah, murid mampu menerapkan prinsip <strong>${f.topik}</strong> untuk merancang dan menyajikan solusi penyelesaian masalah kontekstual secara logis.</td>
+                    <td class="border border-slate-300 p-2">Kualitas rancangan solusi kelompok pada LKPD Bagian 2 dan unjuk kerja presentasi.</td>
+                  </tr>
+                  <tr>
+                    <td class="border border-slate-300 p-2 font-extrabold text-center text-blue-900">TP3</td>
+                    <td class="border border-slate-300 p-2">Melalui kegiatan evaluasi dan refleksi terbimbing, murid mampu menilai efektivitas solusi terkait <strong>${f.topik}</strong> serta menyimpulkan manfaatnya dalam kehidupan sehari-hari.</td>
+                    <td class="border border-slate-300 p-2">Kejelasan argumen evaluasi diri, simpulan akhir, dan ketuntasan latihan sumatif.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div class="p-3 bg-blue-50/50 rounded-lg border border-blue-200/70">
+                <span class="font-bold text-blue-950 block mb-1">Pemahaman Bermakna:</span>
+                <p class="text-slate-700 leading-relaxed">Penguasaan terhadap <strong>${f.topik}</strong> membekali murid dengan pola pikir analitis dan terstruktur untuk menyelesaikan berbagai persoalan nyata di lingkungan sekolah maupun masyarakat.</p>
+              </div>
+              <div class="p-3 bg-amber-50/60 rounded-lg border border-amber-200/70">
+                <span class="font-bold text-amber-950 block mb-1">Pertanyaan Pemantik Inti:</span>
+                <ol class="list-decimal pl-4 space-y-0.5 text-slate-700">
+                  <li>Mengapa kita perlu memahami prinsip kerja dari <em>${f.topik}</em>?</li>
+                  <li>Apa dampaknya jika permasalahan terkait <em>${f.topik}</em> diselesaikan tanpa langkah yang terstruktur?</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. SKENARIO PENGALAMAN BELAJAR PER PERTEMUAN -->
+          <div class="space-y-3">
+            <div class="p-3 bg-blue-950 text-white rounded-xl">
+              <h4 class="font-extrabold text-sm uppercase tracking-wide">4. PENGALAMAN BELAJAR RINCI (${f.meetingCount} PERTEMUAN)</h4>
+              <p class="text-[11px] text-blue-200">Mengintegrasikan tahapan Memahami, Mengaplikasi, dan Merefleksi dengan prinsip Berkesadaran, Bermakna, dan Menggembirakan.</p>
+            </div>
+            ${meetingsHtml}
+          </div>
+
+          <!-- 5. ASESMEN PEMBELAJARAN & RUBRIK ANALITIK -->
+          <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-3 text-xs">
+            <h4 class="font-extrabold text-sm text-blue-900 uppercase border-b pb-2">5. ASESMEN PEMBELAJARAN & RUBRIK PENILAIAN</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <span class="font-extrabold text-blue-900 block">a. Asesmen Awal (Diagnostik)</span>
+                <p><strong>Teknik:</strong> Pertanyaan pemantik lisan & pemetaan cepat pengetahuan prasyarat di awal pertemuan.</p>
+                <p><strong>Tindak Lanjut:</strong> Mengelompokkan murid secara heterogen dan menentukan tingkat bimbingan (<em>scaffolding</em>).</p>
+              </div>
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <span class="font-extrabold text-blue-900 block">b. Asesmen Proses (Formatif)</span>
+                <p><strong>Teknik:</strong> Observasi partisipasi diskusi, pemeriksaan progres LKPD Bagian 1–2, dan tanya jawab klarifikasi.</p>
+                <p><strong>Tindak Lanjut:</strong> Umpan balik langsung pada saat kegiatan kelompok berlangsung.</p>
+              </div>
+              <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <span class="font-extrabold text-blue-900 block">c. Asesmen Akhir (Sumatif)</span>
+                <p><strong>Teknik:</strong> Penilaian produk pemecahan masalah LKPD dan uji pemahaman tertulis tentang <strong>${f.topik}</strong>.</p>
+                <p><strong>Tindak Lanjut:</strong> Penentuan ketuntasan tujuan pembelajaran, program pengayaan, atau remedial.</p>
+              </div>
+            </div>
+
+            <div class="mt-2">
+              <p class="font-bold text-slate-900 mb-1.5">Rubrik Analitik Penilaian Kinerja & Pemahaman (4 Level):</p>
+              <table class="w-full text-xs border-collapse border border-slate-300">
+                <thead>
+                  <tr class="bg-slate-100">
+                    <th class="border border-slate-300 p-2">Aspek / Kriteria</th>
+                    <th class="border border-slate-300 p-2">Perlu Bimbingan (1)</th>
+                    <th class="border border-slate-300 p-2">Cukup (2)</th>
+                    <th class="border border-slate-300 p-2">Cakap / Baik (3)</th>
+                    <th class="border border-slate-300 p-2">Sangat Mahir (4)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="border border-slate-300 p-2 font-bold">Pemahaman Konsep ${f.topik} (TP1)</td>
+                    <td class="border border-slate-300 p-2">Belum mampu mengidentifikasi konsep dasar tanpa tuntunan penuh dari guru.</td>
+                    <td class="border border-slate-300 p-2">Mampu menyebutkan konsep dasar namun masih terdapat kekeliruan pemetaan.</td>
+                    <td class="border border-slate-300 p-2">Mampu menjelaskan konsep esensial dan memetakan komponen utama dengan tepat.</td>
+                    <td class="border border-slate-300 p-2">Mampu menganalisis konsep secara mendalam serta mengaitkannya dengan berbagai fenomena.</td>
+                  </tr>
+                  <tr>
+                    <td class="border border-slate-300 p-2 font-bold">Penerapan & Solusi Masalah (TP2)</td>
+                    <td class="border border-slate-300 p-2">Rancangan penyelesaian masalah belum runtut dan belum sesuai konsep.</td>
+                    <td class="border border-slate-300 p-2">Langkah penyelesaian cukup runtut tetapi belum didukung bukti yang kuat.</td>
+                    <td class="border border-slate-300 p-2">Rancangan solusi sistematis, logis, dan berhasil menjawab permasalahan pada LKPD.</td>
+                    <td class="border border-slate-300 p-2">Rancangan solusi sangat inovatif, akurat, sistematis, dan teruji efektivitasnya.</td>
+                  </tr>
+                  <tr>
+                    <td class="border border-slate-300 p-2 font-bold">Kolaborasi & Komunikasi Reflektif (TP3)</td>
+                    <td class="border border-slate-300 p-2">Pasif dalam kelompok dan belum mampu menuliskan refleksi belajar.</td>
+                    <td class="border border-slate-300 p-2">Terlibat terbatas dalam diskusi dan refleksi masih bersifat permukaan.</td>
+                    <td class="border border-slate-300 p-2">Aktif berkontribusi, komunikatif saat presentasi, dan menyusun refleksi dengan jelas.</td>
+                    <td class="border border-slate-300 p-2">Menjadi penggerak kolaborasi tim, argumentatif, dan reflektif secara mendalam.</td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </div>
 
-          <!-- 6. LAMPIRAN -->
-          <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-2.5 text-xs">
-            <h4 class="font-extrabold text-sm text-blue-900 uppercase border-b pb-2">6. LAMPIRAN</h4>
-            <div class="space-y-2">
-              <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                <span class="font-bold text-slate-900 block">a. Lembar Kerja Peserta Didik (LKPD) Singkat:</span>
-                <p>Tugas kelompok: Analisis kasus permasalahan yang terjadi di lingkungan sekitar terkait topik <em>${f.topik}</em>. Diskusikan 3 langkah solusi terbaik bersama timmu dan tuliskan hasil evaluasinya.</p>
-              </div>
-              <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                <span class="font-bold text-slate-900 block">b. Bahan Ajar Ringkas:</span>
-                <p>Ringkasan materi inti, bagan alur konsep esensial, panduan kosakata kunci, dan referensi bacaan kontekstual.</p>
-              </div>
-              <div class="p-3 bg-slate-50 rounded-lg border border-slate-200">
-                <span class="font-bold text-slate-900 block">c. Tindak Lanjut:</span>
-                <ul class="list-disc pl-5 mt-1 space-y-0.5">
-                  <li><strong>Pengayaan:</strong> Memberikan tantangan memecahkan studi kasus tingkat lanjut di lingkungan masyarakat bagi murid yang mencapai Level 4.</li>
-                  <li><strong>Remedial:</strong> Pendampingan terbimbing dengan bantuan lembar kerja bertahap (*scaffolded worksheet*) bagi murid di Level 1 dan 2.</li>
-                </ul>
-              </div>
+          <!-- 6. LAMPIRAN: LKPD, BAHAN AJAR & TINDAK LANJUT -->
+          <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-3 text-xs">
+            <h4 class="font-extrabold text-sm text-blue-900 uppercase border-b pb-2">6. LAMPIRAN: LKPD, BAHAN AJAR RINGKAS & TINDAK LANJUT</h4>
+            <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <div class="font-extrabold text-blue-950 uppercase">A. Lembar Kerja Peserta Didik (LKPD) — ${f.topik}</div>
+              <p><strong>Petunjuk Belajar:</strong> Bacalah skenario masalah bersama kelompokmu, diskusikan setiap pertanyaan secara kritis, dan tuliskan hasil kesepakatan kelompok pada kolom yang tersedia.</p>
+              <ol class="list-decimal pl-5 space-y-1.5">
+                <li><strong>Bagian 1 (Memahami Konsep):</strong> Amatilah studi kasus mengenai <em>${f.topik}</em> di lingkungan sekitar kita. Identifikasikan minimal 3 komponen/variabel utama beserta fungsinya!</li>
+                <li><strong>Bagian 2 (Mengaplikasi Solusi):</strong> Jika terjadi kendala atau permasalahan pada penerapan <em>${f.topik}</em> tersebut, susunlah langkah-langkah penyelesaian yang logis dan efektif!</li>
+                <li><strong>Bagian 3 (Merefleksi):</strong> Tuliskan 2 hal terpenting yang kamu pelajari hari ini dan bagaimana kamu akan menerapkannya dalam kehidupan sehari-hari!</li>
+              </ol>
+            </div>
+
+            <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+              <div class="font-extrabold text-blue-950 uppercase">B. Ringkasan Bahan Ajar & Tindak Lanjut Pedagogis</div>
+              <p><strong>Intisari Materi:</strong> Materi <em>${f.topik}</em> dalam ${f.mataPelajaran} menekankan pentingnya pemahaman struktur konsep, ketepatan prosedur analisis, dan evaluasi dampak penerapan di kehidupan nyata.</p>
+              <p><strong>Program Pengayaan:</strong> Murid yang telah mencapai kategori <em>Sangat Mahir</em> diberikan tantangan menganalisis studi kasus lanjutan yang lebih kompleks secara mandiri/berpasangan.</p>
+              <p><strong>Program Remedial:</strong> Murid yang masih berada pada kategori <em>Perlu Bimbingan</em> diberikan pendampingan terfokus (<em>tutor sebaya & bimbingan guru</em>) pada bagian konsep yang belum dikuasai.</p>
             </div>
           </div>
         </div>
@@ -859,97 +1010,335 @@ ATURAN:
     }
 
     function generateSmartSoalFallback(userPrompt) {
-      const t = state.teacher || {};
+      const f = analyzeTeacherCommand(userPrompt);
+      const raw = String(userPrompt || '');
+
+      // Deteksi cerdas jumlah soal PG dan Uraian yang diminta guru
+      let pgCount = 5;
+      let essayCount = 3;
+
+      const pgMatch = raw.match(/(\d+)\s*(?:butir\s*)?(?:soal\s*)?(?:pilihan\s*ganda|pg|multiple\s*choice)/i);
+      const essayMatch = raw.match(/(\d+)\s*(?:butir\s*)?(?:soal\s*)?(?:uraian|essay|esai|isian)/i);
+      const genericCountMatch = raw.match(/(?:buatkan|buat|susun|bikinkan)\s+(\d+)\s*(?:butir\s*)?soal/i);
+
+      if (pgMatch) pgCount = Math.min(Math.max(parseInt(pgMatch[1], 10), 1), 25);
+      if (essayMatch) essayCount = Math.min(Math.max(parseInt(essayMatch[1], 10), 0), 15);
+
+      if (!pgMatch && !essayMatch && genericCountMatch) {
+        pgCount = Math.min(Math.max(parseInt(genericCountMatch[1], 10), 1), 25);
+        essayCount = /uraian|essay|esai/i.test(raw) ? 3 : 2;
+      }
+      if (!pgMatch && essayMatch && /hanya\s*uraian|uraian\s*saja/i.test(raw)) {
+        pgCount = 0;
+      }
+
+      const useFiveOptions = f.classNum >= 10 || /opsi\s*a\s*[-–]\s*e|5\s*opsi|lima\s*pilihan|sma|smk|ma\b/i.test(raw);
+      const topic = f.topik;
+      const mapel = f.mataPelajaran;
+
+      // Bank konstruksi soal HOTS kontekstual yang adaptif terhadap topik apapun
+      const cognitiveTemplates = [
+        {
+          level: 'L3 — C4 (Menganalisis)',
+          indicator: `Disajikan studi kasus kontekstual terkait ${topic}, peserta didik mampu menganalisis faktor utama dan hubungan sebab-akibat secara tepat.`,
+          stem: `Perhatikan fenomena kontekstual berikut!\nDalam sebuah pengamatan nyata di lingkungan sekolah terkait materi <strong>${topic}</strong> pada pembelajaran ${mapel}, ditemukan bahwa perubahan pada salah satu komponen utama berdampak langsung terhadap hasil akhir sistem secara keseluruhan. Berdasarkan prinsip ilmiah dan konsep <em>${topic}</em>, analisis yang paling tepat untuk menjelaskan fenomena tersebut adalah...`,
+          options: [
+            `Setiap komponen dalam ${topic} bekerja secara terpisah sehingga perubahan satu variabel tidak memengaruhi komponen lainnya`,
+            `Terdapat keterkaitan fungsional antarkomponen pada ${topic}, di mana perubahan variabel penentu akan mengubah keseimbangan dan efektivitas hasil akhir`,
+            `Hasil akhir pada penerapan ${topic} hanya ditentukan oleh faktor kebetulan tanpa mengikuti kaidah atau pola tertentu`,
+            `Perubahan komponen utama pada ${topic} dapat diabaikan selama proses dilakukan dalam waktu yang singkat`,
+            `Seluruh variabel dalam ${topic} bersifat statis dan tidak pernah mengalami perubahan kondisi dalam situasi nyata`
+          ],
+          correctIdx: 1,
+          explanation: `Dalam konsep ${topic} (${mapel}), setiap komponen utama memiliki hubungan fungsional dan kausalitas. Ketika variabel kunci berubah, maka mekanisme kerja dan hasil akhirnya turut berubah secara sistematis.`
+        },
+        {
+          level: 'L3 — C5 (Mengevaluasi)',
+          indicator: `Disajikan dua alternatif prosedur penyelesaian masalah tentang ${topic}, peserta didik mampu mengevaluasi keputusan paling efektif beserta alasannya.`,
+          stem: `Sekelompok peserta didik sedang merancang solusi untuk mengatasi kendala penerapan <strong>${topic}</strong>. Tim A mengusulkan pendekatan terstruktur berbasis data pengamatan lapangan, sedangkan Tim B mengusulkan pengambilan tindakan langsung tanpa pemetaan masalah agar lebih cepat selesai. Evaluasi kritis yang paling tepat terhadap kedua usulan tersebut adalah...`,
+          options: [
+            `Usulan Tim B lebih unggul karena menghemat waktu meskipun berisiko tinggi menimbulkan kesalahan berulang`,
+            `Kedua usulan sama-sama tidak dapat diterapkan dalam konteks pembelajaran ${mapel}`,
+            `Usulan Tim A lebih efektif dan akurat karena pemetaan data awal memastikan solusi ${topic} tepat sasaran dan meminimalkan risiko kegagalan`,
+            `Usulan Tim A terlalu rumit sehingga sebaiknya seluruh tahapan analisis data dihilangkan saja`,
+            `Keberhasilan penerapan ${topic} sama sekali tidak dipengaruhi oleh perencanaan maupun ketepatan data awal`
+          ],
+          correctIdx: 2,
+          explanation: `Evaluasi solusi pada materi ${topic} menuntut dasar data yang valid (pendekatan Tim A). Tanpa pemetaan masalah yang akurat, tindakan yang diambil berisiko salah sasaran.`
+        },
+        {
+          level: 'L2 — C3 (Mengaplikasikan)',
+          indicator: `Disajikan situasi permasalahan sehari-hari terkait ${topic}, peserta didik mampu menerapkan langkah prosedur yang benar.`,
+          stem: `Ketika seseorang hendak menerapkan prinsip <strong>${topic}</strong> untuk menyelesaikan permasalahan praktis di lingkungan sekitar, urutan langkah sistematis yang harus dilakukan agar memperoleh hasil yang optimal adalah...`,
+          options: [
+            `Menentukan kesimpulan akhir terlebih dahulu, kemudian mencari data yang hanya mendukung kesimpulan tersebut`,
+            `Mengabaikan aturan dasar ${topic} dan langsung mencoba berbagai cara secara acak`,
+            `Mengidentifikasi kebutuhan/masalah utama, memetakan konsep ${topic} yang relevan, menerapkan prosedur secara runtut, lalu mengevaluasi hasilnya`,
+            `Menyalin hasil pekerjaan orang lain tanpa menyesuaikan dengan kondisi permasalahan yang sedang dihadapi`,
+            `Menghentikan proses penerapan segera setelah menemukan satu kendala kecil di tahap awal`
+          ],
+          correctIdx: 2,
+          explanation: `Penerapan (aplikasi) konsep ${topic} yang benar selalu dimulai dari identifikasi masalah, pemilihan konsep/rumus/prinsip yang tepat, eksekusi terstruktur, hingga verifikasi hasil.`
+        },
+        {
+          level: 'L3 — C4 (Membandingkan & Mengidentifikasi Pola)',
+          indicator: `Disajikan data pengamatan tentang ${topic}, peserta didik mampu menyimpulkan pola dan karakteristik kunci dengan akurat.`,
+          stem: `Berdasarkan hasil telaah literatur dan pengamatan langsung mengenai <strong>${topic}</strong>, ditemukan adanya pola berulang yang menjadi ciri khas utama konsep tersebut dibandingkan konsep lainnya dalam ${mapel}. Pernyataan berikut yang secara akurat mencerminkan karakteristik esensial dari <em>${topic}</em> adalah...`,
+          options: [
+            `Memiliki struktur konsep yang terukur, dapat diamati buktinya secara empiris/logis, serta relevan untuk memecahkan persoalan kontekstual`,
+            `Tidak memiliki kaitan apa pun dengan fenomena kehidupan nyata di luar ruang kelas`,
+            `Hanya dapat dipahami melalui hafalan definisi tanpa perlu memahami cara kerjanya`,
+            `Selalu menghasilkan kesimpulan yang bertentangan dengan prinsip dasar ${mapel}`,
+            `Bersifat tertutup terhadap pengujian maupun pembuktian ilmiah`
+          ],
+          correctIdx: 0,
+          explanation: `Karakteristik esensial dari konsep ${topic} pada ${mapel} adalah sifatnya yang terstruktur, logis/empiris, dan dapat diaplikasikan secara nyata.`
+        },
+        {
+          level: 'L3 — C6 (Merancang / Mengkreasi Solusi)',
+          indicator: `Disajikan tantangan inovasi terkait ${topic}, peserta didik mampu merumuskan rancangan tindak lanjut perbaikan yang paling tepat.`,
+          stem: `Apabila dalam suatu pengujian penerapan <strong>${topic}</strong> ditemukan bahwa hasil yang diperoleh belum mencapai target kriteria keberhasilan akibat adanya variabel pengganggu, langkah perbaikan inovatif yang paling tepat dilakukan adalah...`,
+          options: [
+            `Mengubah data hasil pengamatan secara sepihak agar terlihat sesuai dengan target awal`,
+            `Menganalisis letak variabel pengganggu, mengoptimalkan kembali parameter kerja pada ${topic}, lalu melakukan pengujian ulang secara terkontrol`,
+            `Membatalkan seluruh kegiatan dan menyimpulkan bahwa materi ${topic} tidak mungkin dipelajari`,
+            `Mengulang prosedur yang persis sama berkali-kali tanpa memperbaiki faktor penyebab kesalahannya`,
+            `Menyalahkan peralatan tanpa melakukan pemeriksaan prosedur kerja`
+          ],
+          correctIdx: 1,
+          explanation: `Pada level berpikir kreasi/perbaikan (C6), ketidakcocokan hasil diatasi dengan mengisolasi variabel pengganggu, menyempurnakan rancangan parameter ${topic}, dan mengujinya kembali.`
+        },
+        {
+          level: 'L2 — C3 (Klasifikasi & Interpretasi Konsep)',
+          indicator: `Peserta didik mampu mengklasifikasikan contoh penerapan ${topic} yang tepat dalam kehidupan sehari-hari.`,
+          stem: `Manakah di antara aktivitas nyata di bawah ini yang merupakan wujud penerapan langsung paling tepat dari konsep <strong>${topic}</strong> dalam kehidupan sehari-hari?`,
+          options: [
+            `Menggunakan prinsip dan kaidah ${topic} secara sadar untuk meningkatkan efisiensi serta ketepatan penyelesaian tugas harian`,
+            `Menghafal seluruh istilah ${topic} tanpa pernah menggunakannya saat menghadapi masalah nyata`,
+            `Menghindari penggunaan konsep ${mapel} karena dianggap hanya berlaku di laboratorium`,
+            `Mengambil keputusan penting berdasarkan asumsi semata tanpa memeriksa fakta terkait ${topic}`,
+            `Mengabaikan keselamatan dan ketelitian prosedur saat melakukan praktik ${topic}`
+          ],
+          correctIdx: 0,
+          explanation: `Wujud nyata penguasaan ${topic} terlihat ketika peserta didik mampu mentransfer konsep yang dipelajari ke dalam pengambilan keputusan dan penyelesaian masalah sehari-hari.`
+        }
+      ];
+
+      const optionLetters = useFiveOptions ? ['A', 'B', 'C', 'D', 'E'] : ['A', 'B', 'C', 'D'];
+
+      let kisiKisiRows = '';
+      let pgHtml = '';
+      let pgKeysHtml = '';
+
+      for (let i = 0; i < pgCount; i++) {
+        const tpl = cognitiveTemplates[i % cognitiveTemplates.length];
+        const qNum = i + 1;
+
+        // Rotasi posisi kunci jawaban secara deterministik agar variasi kunci merata (A/B/C/D)
+        const targetPos = (i + 1) % optionLetters.length;
+        const rawOpts = tpl.options.slice(0, optionLetters.length);
+        const correctText = tpl.options[tpl.correctIdx];
+
+        // Susun ulang opsi sehingga jawaban benar berada pada targetPos
+        const distractors = tpl.options.filter((_, idx) => idx !== tpl.correctIdx).slice(0, optionLetters.length - 1);
+        const finalOpts = [];
+        let dIdx = 0;
+        for (let o = 0; o < optionLetters.length; o++) {
+          if (o === targetPos) finalOpts.push(correctText);
+          else finalOpts.push(distractors[dIdx++]);
+        }
+        const correctLetter = optionLetters[targetPos];
+
+        kisiKisiRows += `
+          <tr>
+            <td class="border border-slate-300 p-1.5 text-center font-bold">${qNum}</td>
+            <td class="border border-slate-300 p-1.5">${topic} (Sub-fokus #${qNum})</td>
+            <td class="border border-slate-300 p-1.5">${tpl.indicator}</td>
+            <td class="border border-slate-300 p-1.5 text-center font-semibold text-purple-900">${tpl.level}</td>
+            <td class="border border-slate-300 p-1.5 text-center">Pilihan Ganda</td>
+          </tr>
+        `;
+
+        pgHtml += `
+          <div class="p-3.5 bg-slate-50/70 rounded-xl border border-slate-200/80 space-y-2">
+            <div class="flex items-center justify-between text-[10px] font-extrabold text-purple-800 bg-purple-100/80 px-2.5 py-0.5 rounded-md w-fit">
+              <span>Butir Soal PG #${qNum} • ${tpl.level}</span>
+            </div>
+            <p class="font-bold text-slate-900 leading-relaxed">${qNum}. ${tpl.stem.replace(/\n/g, '<br/>')}</p>
+            <ul class="pl-4 space-y-1 text-slate-800">
+              ${finalOpts.map((optText, oIdx) => `
+                <li><strong>${optionLetters[oIdx]}.</strong> ${optText}</li>
+              `).join('')}
+            </ul>
+          </div>
+        `;
+
+        pgKeysHtml += `
+          <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+            <div class="font-extrabold text-emerald-900">Nomor ${qNum} — Kunci Jawaban: ${correctLetter} <span class="text-slate-500 font-normal">(${tpl.level})</span></div>
+            <p class="text-slate-700 mt-0.5"><strong>Pembahasan:</strong> ${tpl.explanation}</p>
+          </div>
+        `;
+      }
+
+      const essayTemplates = [
+        {
+          level: 'L3 — C4 (Analisis Mendalam)',
+          indicator: `Menganalisis konsep dan mekanisme kerja ${topic} beserta penerapannya pada kasus nyata.`,
+          q: `Jelaskan secara komprehensif konsep utama dari <strong>${topic}</strong> dalam mata pelajaran ${mapel}, kemudian analisislah bagaimana komponen-komponen di dalamnya saling bekerja untuk menyelesaikan suatu permasalahan nyata di lingkungan sekitar kita! Sertakan minimal 3 contoh atau langkah konkret!`,
+          ans: `Peserta didik menguraikan definisi operasional ${topic} secara tepat (skor 30%), menganalisis keterkaitan mekanisme kerja antarkomponen secara logis (skor 40%), serta memberikan minimal 3 contoh/langkah penerapan nyata yang relevan di lingkungan sekitar (skor 30%).`
+        },
+        {
+          level: 'L3 — C5 (Evaluasi Studi Kasus)',
+          indicator: `Mengevaluasi permasalahan/kendala pada penerapan ${topic} dan memberikan argumen solusi.`,
+          q: `Dalam praktik penerapan <strong>${topic}</strong>, sering kali ditemukan kendala atau ketidaksesuaian hasil akibat kurang tepatnya perencanaan awal. Evaluasilah faktor-faktor kritis apa saja yang paling menentukan keberhasilan <em>${topic}</em>, serta berikan alasan mengapa evaluasi berkala sangat diperlukan!`,
+          ans: `Peserta didik mengidentifikasi minimal 2 faktor penentu keberhasilan ${topic} (skor 40%), mengevaluasi dampak jika faktor tersebut diabaikan (skor 30%), dan menyusun argumen logis pentingnya evaluasi berkala (skor 30%).`
+        },
+        {
+          level: 'L3 — C6 (Perancangan Solusi Kontekstual)',
+          indicator: `Merancang solusi sistematis berbasis konsep ${topic} untuk mengatasi masalah di lingkungan sekolah/masyarakat.`,
+          q: `Amatilah salah satu permasalahan di lingkungan sekolah atau daerah tempat tinggalmu yang berkaitan dengan <strong>${topic}</strong>. Rancanglah sebuah alur solusi yang sistematis, realistis, dan terukur untuk mengatasi permasalahan tersebut, lengkap dengan indikator keberhasilannya!`,
+          ans: `Peserta didik menetapkan masalah kontekstual yang relevan dengan ${topic} (skor 25%), menyusun tahapan solusi secara runtut dan aplikatif (skor 50%), serta merumuskan indikator keberhasilan yang terukur (skor 25%).`
+        },
+        {
+          level: 'L3 — C4 (Perbandingan & Sintesis)',
+          indicator: `Membandingkan keunggulan dan keterbatasan strategi dalam penerapan ${topic}.`,
+          q: `Bandingkan dua pendekatan yang berbeda dalam menerapkan <strong>${topic}</strong> pada situasi keterbatasan sarana! Pendekatan mana yang menurutmu paling adaptif dan efisien untuk diterapkan oleh siswa ${f.kelas}? Jelaskan argumenmu!`,
+          ans: `Peserta didik membandingkan karakteristik kedua pendekatan pada ${topic} secara objektif (skor 50%) dan memberikan rekomendasi yang disertai alasan rasional sesuai konteks ${f.kelas} (skor 50%).`
+        }
+      ];
+
+      let essayHtml = '';
+      let essayRubricHtml = '';
+      const totalPgWeight = pgCount > 0 && essayCount > 0 ? 60 : pgCount > 0 ? 100 : 0;
+      const totalEssayWeight = essayCount > 0 && pgCount > 0 ? 40 : essayCount > 0 ? 100 : 0;
+      const pgScoreEach = pgCount > 0 ? (totalPgWeight / pgCount).toFixed(1).replace(/\.0$/, '') : 0;
+      const essayScoreEach = essayCount > 0 ? (totalEssayWeight / essayCount).toFixed(1).replace(/\.0$/, '') : 0;
+
+      for (let j = 0; j < essayCount; j++) {
+        const et = essayTemplates[j % essayTemplates.length];
+        const eNum = j + 1;
+
+        kisiKisiRows += `
+          <tr>
+            <td class="border border-slate-300 p-1.5 text-center font-bold">${pgCount + eNum}</td>
+            <td class="border border-slate-300 p-1.5">${topic} (Studi Kasus #${eNum})</td>
+            <td class="border border-slate-300 p-1.5">${et.indicator}</td>
+            <td class="border border-slate-300 p-1.5 text-center font-semibold text-purple-900">${et.level}</td>
+            <td class="border border-slate-300 p-1.5 text-center">Uraian HOTS</td>
+          </tr>
+        `;
+
+        essayHtml += `
+          <div class="p-3.5 bg-slate-50/70 rounded-xl border border-slate-200/80 space-y-1.5">
+            <div class="text-[10px] font-extrabold text-indigo-800 bg-indigo-100/80 px-2.5 py-0.5 rounded-md w-fit">
+              Soal Uraian #${eNum} • ${et.level} (Bobot Maks: ${essayScoreEach} Poin)
+            </div>
+            <p class="font-bold text-slate-900 leading-relaxed">${eNum}. ${et.q}</p>
+          </div>
+        `;
+
+        essayRubricHtml += `
+          <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+            <div class="font-extrabold text-indigo-950">Uraian Nomor ${eNum} (Skor Maksimal: ${essayScoreEach} Poin)</div>
+            <p class="text-slate-700 mt-0.5"><strong>Pedoman Jawaban & Kriteria Penskoran:</strong> ${et.ans}</p>
+          </div>
+        `;
+      }
+
       return `
         <div class="space-y-4">
+          <!-- IDENTITAS & RINGKASAN ANALISIS PERINTAH -->
           <div class="p-4 bg-white rounded-xl border border-slate-200">
-            <h4 class="font-extrabold text-sm text-purple-900 uppercase border-b pb-2 mb-2">NASKAH ASESMEN & BANK SOAL TERPADU</h4>
-            <table class="w-full text-xs">
-              <tr><td class="font-bold py-1 w-40">Satuan Pendidikan</td><td>: ${t.school_name || 'SMP Negeri 1 Bandar Lampung'}</td></tr>
-              <tr><td class="font-bold py-1">Mata Pelajaran</td><td>: ${t.subject_name || 'Informatika'}</td></tr>
-              <tr><td class="font-bold py-1">Penyusun</td><td>: ${t.full_name || 'Budi Santoso, S.Kom.'}</td></tr>
-              <tr><td class="font-bold py-1">Fokus / Instruksi Soal</td><td>: <strong>${userPrompt}</strong></td></tr>
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b pb-2 mb-2.5">
+              <h4 class="font-extrabold text-sm text-purple-900 uppercase">NASKAH ASESMEN, KISI-KISI & BANK SOAL TERPADU (HOTS)</h4>
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-100 text-purple-900">
+                ${pgCount} PG + ${essayCount} Uraian • Standar Kognitif Tinggi
+              </span>
+            </div>
+            <table class="w-full text-xs border-collapse border border-slate-300">
+              <tbody>
+                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50 w-44">Satuan Pendidikan</td><td class="border border-slate-300 p-2">${f.satuanPendidikan}</td></tr>
+                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Mata Pelajaran & Kelas</td><td class="border border-slate-300 p-2">${mapel} • ${f.kelas} (${f.fase})</td></tr>
+                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Topik / Materi Pokok</td><td class="border border-slate-300 p-2 font-bold text-purple-950">${topic}</td></tr>
+                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Penyusun</td><td class="border border-slate-300 p-2">${f.namaGuru}</td></tr>
+                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Komposisi Instrumen</td><td class="border border-slate-300 p-2">${pgCount} Pilihan Ganda (${optionLetters.join('–')}) & ${essayCount} Uraian Analitik</td></tr>
+              </tbody>
             </table>
           </div>
 
-          <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-3">
-            <h4 class="font-extrabold text-sm text-purple-900 uppercase border-b pb-2">BAGIAN A: SOAL PILIHAN GANDA (HOTS & KONTEKSTUAL)</h4>
-
-            <div class="space-y-1">
-              <p class="font-bold">1. Perhatikan permasalahan kompleks yang sering ditemukan dalam aktivitas sehari-hari terkait topik <em>${userPrompt}</em>. Langkah pertama paling tepat dalam pendekatan dekomposisi masalah adalah...</p>
-              <ul class="pl-4 space-y-0.5">
-                <li>A. Langsung mengeksekusi solusi akhir tanpa memetakan bagian masalah</li>
-                <li>B. Memecah persoalan besar menjadi sub-masalah yang lebih kecil dan mudah dikelola</li>
-                <li>C. Mengabaikan variabel utama agar waktu pengerjaan lebih singkat</li>
-                <li>D. Menyalin solusi dari masalah lain yang tidak memiliki kemiripan pola</li>
-              </ul>
-            </div>
-
-            <div class="space-y-1">
-              <p class="font-bold">2. Ketika sebuah tim siswa menemukan pola berulang saat menganalisis data pada kegiatan <em>${userPrompt}</em>, prinsip berpikir komputasional yang sedang bekerja secara dominan adalah...</p>
-              <ul class="pl-4 space-y-0.5">
-                <li>A. Pengenalan Pola (<em>Pattern Recognition</em>)</li>
-                <li>B. Kompilasi Perangkat Keras</li>
-                <li>C. Eliminasi Prosedur</li>
-                <li>D. Duplikasi Informasi Acak</li>
-              </ul>
-            </div>
-
-            <div class="space-y-1">
-              <p class="font-bold">3. Manakah di antara pernyataan berikut yang menunjukkan penerapan konsep abstraksi yang paling efektif dalam menyusun solusi?</p>
-              <ul class="pl-4 space-y-0.5">
-                <li>A. Memasukkan seluruh informasi tidak relevan ke dalam laporan utama</li>
-                <li>B. Menyaring dan memfokuskan perhatian pada informasi penting serta mengabaikan detail yang tidak relevan</li>
-                <li>C. Menghapus seluruh petunjuk langkah kerja agar terlihat ringkas</li>
-                <li>D. Mengubah tujuan utama proyek di tengah pelaksanaan tanpa evaluasi</li>
-              </ul>
-            </div>
-
-            <div class="space-y-1">
-              <p class="font-bold">4. Agar rancangan langkah penyelesaian masalah dapat dijalankan secara konsisten oleh orang lain, maka urutan instruksi harus memenuhi kriteria...</p>
-              <ul class="pl-4 space-y-0.5">
-                <li>A. Logis, terstruktur, berurutan, dan tidak menimbulkan makna ganda (ambigu)</li>
-                <li>B. Menggunakan istilah asing sebanyak mungkin meskipun sulit dipahami</li>
-                <li>C. Dibuat secara acak sesuai keinginan pelaksana</li>
-                <li>D. Tidak memiliki batas awal maupun kondisi akhir</li>
-              </ul>
-            </div>
-
-            <div class="space-y-1">
-              <p class="font-bold">5. Evaluasi kritis terhadap solusi yang telah diterapkan bertujuan untuk...</p>
-              <ul class="pl-4 space-y-0.5">
-                <li>A. Mencari kesalahan anggota kelompok semata</li>
-                <li>B. Mengukur efektivitas solusi serta menemukan peluang perbaikan yang lebih efisien</li>
-                <li>C. Menghentikan proses belajar setelah satu kali percobaan</li>
-                <li>D. Menghindari penggunaan data faktual</li>
-              </ul>
-            </div>
+          <!-- TABEL KISI-KISI PENULISAN SOAL -->
+          <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-2.5">
+            <h4 class="font-extrabold text-sm text-purple-900 uppercase border-b pb-2">BAGIAN I: KISI-KISI PENULISAN SOAL</h4>
+            <table class="w-full text-xs border-collapse border border-slate-300">
+              <thead>
+                <tr class="bg-slate-100">
+                  <th class="border border-slate-300 p-2 w-12 text-center">No</th>
+                  <th class="border border-slate-300 p-2 w-44">Materi / Sub-Topik</th>
+                  <th class="border border-slate-300 p-2">Indikator Pencapaian Soal</th>
+                  <th class="border border-slate-300 p-2 w-36 text-center">Level Kognitif</th>
+                  <th class="border border-slate-300 p-2 w-28 text-center">Bentuk Soal</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${kisiKisiRows}
+              </tbody>
+            </table>
           </div>
 
-          <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-3">
-            <h4 class="font-extrabold text-sm text-purple-900 uppercase border-b pb-2">BAGIAN B: SOAL URAIAN / PEMECAHAN MASALAH</h4>
-            <ol class="list-decimal pl-5 space-y-2">
-              <li>Jelaskan bagaimana cara menerapkan konsep yang telah kamu pelajari pada topik <strong>${userPrompt}</strong> untuk menyelesaikan salah satu masalah nyata di lingkungan sekolahmu! Tuliskan minimal 3 langkah runtut!</li>
-              <li>Mengapa pengujian dan evaluasi kembali terhadap rancangan solusi sangat penting dilakukan sebelum solusi tersebut diterapkan secara luas? Jelaskan disertai contoh konkret!</li>
-            </ol>
-          </div>
+          ${pgCount > 0 ? `
+            <!-- BAGIAN A: SOAL PILIHAN GANDA -->
+            <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-3">
+              <div class="flex items-center justify-between border-b pb-2">
+                <h4 class="font-extrabold text-sm text-purple-900 uppercase">BAGIAN II: SOAL PILIHAN GANDA (${pgCount} BUTIR)</h4>
+                <span class="text-[11px] font-bold text-slate-500">Pilihlah satu jawaban yang paling tepat!</span>
+              </div>
+              <div class="space-y-3">
+                ${pgHtml}
+              </div>
+            </div>
+          ` : ''}
 
-          <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-2">
-            <h4 class="font-extrabold text-sm text-emerald-800 uppercase border-b pb-2">KUNCI JAWABAN & PEDOMAN PENSKORAN</h4>
-            <p><strong>Kunci Pilihan Ganda (Skor @10 Poin = Total 50 Poin):</strong></p>
-            <ul class="list-disc pl-5 space-y-0.5">
-              <li>Nomor 1: <strong>B</strong> (Memecah persoalan besar menjadi bagian lebih kecil/terkelola).</li>
-              <li>Nomor 2: <strong>A</strong> (Mengenali kesamaan/pola dari data atau pengalaman sebelumnya).</li>
-              <li>Nomor 3: <strong>B</strong> (Fokus pada informasi esensial dan menyaring detail tidak relevan).</li>
-              <li>Nomor 4: <strong>A</strong> (Algoritma/prosedur harus sistematis, jelas, dan tidak ambigu).</li>
-              <li>Nomor 5: <strong>B</strong> (Evaluasi bertujuan menguji keampuhan dan efisiensi solusi).</li>
-            </ul>
-            <p class="mt-2"><strong>Rubrik Soal Uraian (Total 50 Poin):</strong></p>
-            <ul class="list-disc pl-5 space-y-1">
-              <li><strong>Uraian No. 1 (Skor Maks 25):</strong> Menyebutkan masalah nyata yang relevan (5 poin), menguraikan minimal 3 langkah sistematis dan logis (15 poin), simpulan dampak positif (5 poin).</li>
-              <li><strong>Uraian No. 2 (Skor Maks 25):</strong> Menjelaskan alasan pentingnya evaluasi/pengujian (15 poin) dan memberikan contoh kasus nyata yang tepat (10 poin).</li>
-            </ul>
-            <p class="font-bold text-slate-900 mt-1">Rumus Nilai Akhir = Skor Pilihan Ganda (50) + Skor Uraian (50) = 100.</p>
+          ${essayCount > 0 ? `
+            <!-- BAGIAN B: SOAL URAIAN / ESSAY -->
+            <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-3">
+              <div class="flex items-center justify-between border-b pb-2">
+                <h4 class="font-extrabold text-sm text-purple-900 uppercase">BAGIAN ${pgCount > 0 ? 'III' : 'II'}: SOAL URAIAN / PEMECAHAN MASALAH (${essayCount} BUTIR)</h4>
+                <span class="text-[11px] font-bold text-slate-500">Jawablah dengan analisis yang runtut dan jelas!</span>
+              </div>
+              <div class="space-y-3">
+                ${essayHtml}
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- KUNCI JAWABAN, PEMBAHASAN MENDALAM & PEDOMAN PENSKORAN -->
+          <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-3">
+            <h4 class="font-extrabold text-sm text-emerald-800 uppercase border-b pb-2">
+              KUNCI JAWABAN, PEMBAHASAN MENDALAM & PEDOMAN PENSKORAN
+            </h4>
+
+            ${pgCount > 0 ? `
+              <div class="space-y-2">
+                <p class="font-bold text-slate-900">A. Kunci Jawaban & Pembahasan Pilihan Ganda (Skor @${pgScoreEach} Poin = Total ${totalPgWeight} Poin):</p>
+                <div class="space-y-2">
+                  ${pgKeysHtml}
+                </div>
+              </div>
+            ` : ''}
+
+            ${essayCount > 0 ? `
+              <div class="space-y-2 pt-2">
+                <p class="font-bold text-slate-900">B. Rubrik & Pedoman Penskoran Soal Uraian (Total ${totalEssayWeight} Poin):</p>
+                <div class="space-y-2">
+                  ${essayRubricHtml}
+                </div>
+              </div>
+            ` : ''}
+
+            <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-950 font-bold text-xs">
+              Rumus Perhitungan Nilai Akhir = ${pgCount > 0 && essayCount > 0 ? `Total Skor Pilihan Ganda (${totalPgWeight}) + Total Skor Uraian (${totalEssayWeight}) = 100 Poin.` : `Total Skor Perolehan = 100 Poin.`}
+            </div>
           </div>
         </div>
       `;
@@ -1004,16 +1393,9 @@ ATURAN:
           if (Array.isArray(parsed.homeroom_records)) state.homeroom_records = parsed.homeroom_records;
           if (Array.isArray(parsed.teacher_portfolios)) state.teacher_portfolios = parsed.teacher_portfolios;
           if (parsed.classKkm) state.classKkm = parsed.classKkm;
-          if (
-            parsed.aiRpmInputText &&
-            !parsed.aiRpmInputText.includes('1. Nama satuan pendidikan') &&
-            !parsed.aiRpmInputText.includes('Tujuan pembelajaran awal jika sudah ada :') &&
-            !parsed.aiRpmInputText.includes('- Satuan pendidikan/Kelas/Fase: SMP Negeri 1 Bandar Lampung')
-          ) {
-            state.aiRpmInputText = parsed.aiRpmInputText;
-          } else {
-            state.aiRpmInputText = '';
-          }
+          if (parsed.selectedAiModel) state.selectedAiModel = parsed.selectedAiModel;
+          if (typeof parsed.aiRpmInputText === 'string') state.aiRpmInputText = parsed.aiRpmInputText;
+          if (typeof parsed.aiSoalInputText === 'string') state.aiSoalInputText = parsed.aiSoalInputText;
           if (parsed.aiGeneratedRpm) state.aiGeneratedRpm = parsed.aiGeneratedRpm;
           if (parsed.aiGeneratedSoal) state.aiGeneratedSoal = parsed.aiGeneratedSoal;
         }
@@ -1038,7 +1420,9 @@ ATURAN:
           homeroom_records: state.homeroom_records,
           teacher_portfolios: state.teacher_portfolios,
           classKkm: state.classKkm,
+          selectedAiModel: state.selectedAiModel,
           aiRpmInputText: state.aiRpmInputText,
+          aiSoalInputText: state.aiSoalInputText,
           aiGeneratedRpm: state.aiGeneratedRpm,
           aiGeneratedSoal: state.aiGeneratedSoal
         };
@@ -1315,124 +1699,67 @@ ATURAN:
     function renderAiRpmSection(isGenerating, t) {
       const result = state.aiGeneratedRpm;
       const currentInput = state.aiRpmInputText || '';
+      const selectedModel = state.selectedAiModel || 'Claude AI';
+
       return `
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-4">
             <div class="border-b border-slate-100 pb-3 flex items-start justify-between gap-2">
               <div>
                 <span class="text-[11px] font-extrabold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full">Generate RPM dengan AI</span>
-                <h4 class="text-base font-extrabold text-slate-900 mt-1">Kolom Data Masukan Guru</h4>
-                <p class="text-xs text-slate-500">Salin dan lengkapi prompt dari panduan di bawah, lalu tempelkan (paste) ke dalam kolom Data Pembelajaran Guru.</p>
+                <h4 class="text-base font-extrabold text-slate-900 mt-1">Perintah Penyusunan RPM</h4>
+                <p class="text-xs text-slate-500">Pilih model AI dan tuliskan perintah pembuatan RPM sesuai keinginan Anda.</p>
               </div>
               <button type="button" onclick="window.app.resetRpmTemplateInput()" class="text-[11px] font-extrabold text-rose-600 hover:text-rose-800 underline shrink-0">
                 Bersihkan Kolom
               </button>
             </div>
 
-            <!-- LINK PANDUAN CP RESMI -->
-            <div class="p-3 bg-blue-50 rounded-xl border border-blue-200/80 text-xs text-blue-900 flex items-center justify-between gap-2">
-              <div class="flex items-center gap-2">
-                <i data-lucide="book-open" class="w-4 h-4 text-blue-700 shrink-0"></i>
-                <span class="font-semibold text-[11px]">Panduan Capaian Pembelajaran (CP) Resmi:</span>
+            <!-- PILIHAN MODEL AI (CLAUDE AI, GEMINI, CHATGPT) -->
+            <div class="space-y-2">
+              <label class="font-bold text-xs text-slate-700 block">Pilih Model Kecerdasan AI:</label>
+              <div class="grid grid-cols-3 gap-2">
+                ${AI_MODELS.map(m => {
+                  const isSelected = selectedModel === m.id;
+                  return `
+                    <button type="button" onclick="window.app.selectAiModel('${m.id}')"
+                      class="p-2.5 rounded-xl border text-left transition flex flex-col justify-between ${
+                        isSelected
+                          ? 'bg-[#072B7A] text-white border-[#072B7A] shadow-md ring-2 ring-blue-600/20'
+                          : 'bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200'
+                      }">
+                      <div class="flex items-center justify-between gap-1">
+                        <span class="font-extrabold text-xs">${m.name}</span>
+                        <i data-lucide="${isSelected ? 'check-circle-2' : 'cpu'}" class="w-3.5 h-3.5 ${isSelected ? 'text-amber-300' : 'text-slate-400'} shrink-0"></i>
+                      </div>
+                      <span class="text-[10px] mt-1 leading-tight ${isSelected ? 'text-blue-100' : 'text-slate-500'}">${m.id === 'Claude AI' ? 'Mendalam & Rapi' : m.id === 'Gemini' ? 'Cepat & Kontekstual' : 'Kreatif & Adaptif'}</span>
+                    </button>
+                  `;
+                }).join('')}
               </div>
-              <a href="https://kurikulum.kemendikdasmen.go.id/file/1753929861_manage_file.pdf" target="_blank" rel="noopener noreferrer"
-                class="px-2.5 py-1 rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-bold text-[11px] inline-flex items-center gap-1 shadow-sm transition shrink-0">
-                <i data-lucide="external-link" class="w-3 h-3"></i>
-                <span>Buka Dokumen CP</span>
-              </a>
-            </div>
-
-            <!-- PANDUAN PROMPT PEMBUATAN RPM PERSIS DI BAWAH LINK PANDUAN CP -->
-            <div class="p-3.5 bg-amber-50/70 rounded-xl border border-amber-200/90 space-y-2.5 text-xs">
-              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200/70 pb-2">
-                <div class="flex items-center gap-1.5 font-extrabold text-amber-950">
-                  <i data-lucide="file-text" class="w-4 h-4 text-amber-700 shrink-0"></i>
-                  <span>Panduan Pembuatan Prompt RPM:</span>
-                </div>
-                <div class="flex items-center gap-1.5">
-                  <button type="button" onclick="window.app.copyRpmGuidePrompt()"
-                    class="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-[11px] inline-flex items-center gap-1 shadow-sm transition" title="Salin teks prompt panduan">
-                    <i data-lucide="copy" class="w-3 h-3"></i>
-                    <span>Salin Prompt</span>
-                  </button>
-                  <button type="button" onclick="window.app.downloadRpmGuideWord()"
-                    class="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-50 text-blue-800 border border-amber-300 font-bold text-[11px] inline-flex items-center gap-1 shadow-sm transition" title="Unduh file Word Panduan Pembuatan Prompt">
-                    <i data-lucide="download" class="w-3 h-3"></i>
-                    <span>Unduh Word</span>
-                  </button>
-                </div>
-              </div>
-
-              <ol class="list-decimal pl-4 space-y-1 text-[11px] text-slate-700 leading-relaxed">
-                <li>Isi data yang diperlukan (semakin banyak informasi/data yang diberikan semakin bagus hasilnya)</li>
-                <li>Hapus dan ganti <span class="text-rose-600 font-bold">teks berwarna merah</span></li>
-                <li>Jika dirasa cukup salin/copy semua data yang telah diisi kemudian paste pada kolom <strong>Generate RPM dengan AI</strong></li>
-                <li>Jangan lupa cek kembali hasilnya, unduh dan edit bagian yang tidak sesuai (ingat AI hanya membantu dan bisa salah)</li>
-              </ol>
-
-              <div class="bg-white rounded-lg border border-amber-200 p-3 max-h-56 overflow-y-auto custom-scroll text-[11px] font-mono leading-relaxed text-slate-800 space-y-1">
-                <div class="text-[10px] font-sans font-extrabold uppercase tracking-wider text-blue-700 bg-blue-50 px-2 py-0.5 rounded inline-block mb-1">Copy nya nanti dari sini ya !</div>
-                <div><strong>Peran:</strong> Kamu adalah pakar kurikulum dan pedagogi Indonesia yang menguasai pendekatan Pembelajaran Mendalam (Kemendikdasmen).</div>
-                <div><strong>Tugas:</strong> Susun Rencana Pembelajaran Mendalam (RPM) yang siap pakai, operasional, dan kontekstual.</div>
-                <div class="pt-1 font-bold">DATA:</div>
-                <div>1. Nama satuan pendidikan: <span class="text-rose-600 font-bold">[isi]</span></div>
-                <div>2. Nama guru: <span class="text-rose-600 font-bold">[isi]</span></div>
-                <div>3. Jenjang pendidikan: <span class="text-rose-600 font-bold">[isi]</span></div>
-                <div>4. Mata pelajaran: <span class="text-rose-600 font-bold">[isi]</span></div>
-                <div>5. Fase dan kelas: <span class="text-rose-600 font-bold">[isi]</span></div>
-                <div>6. Semester dan tahun ajaran: <span class="text-rose-600 font-bold">[isi]</span></div>
-                <div>7. Topik atau materi: <span class="text-rose-600 font-bold">[isi]</span></div>
-                <div>8. Jumlah pertemuan: <span class="text-rose-600 font-bold">[isi]</span></div>
-                <div>9. Alokasi waktu setiap pertemuan: <span class="text-rose-600 font-bold">[isi]</span></div>
-                <div>10. Capaian Pembelajaran: <span class="text-rose-600 font-bold">[tempelkan kutipan CP dari sumber resmi]</span></div>
-                <div>11. Pengetahuan awal dan kebutuhan belajar murid: <span class="text-rose-600 font-bold">[isi]</span></div>
-                <div>12. Sarana, media, dan lingkungan belajar: <span class="text-rose-600 font-bold">[isi]</span></div>
-                <div>13. Tujuan pembelajaran : <span class="text-rose-600 font-bold">[isi]</span></div>
-                <div class="text-rose-600 font-bold">
-                  14. Instrumen dan lampiran, Sertakan sesuai kebutuhan :<br/>
-                  &nbsp;&nbsp;&nbsp;- LKPD dengan petunjuk, tugas, dan hasil yang diharapkan;<br/>
-                  &nbsp;&nbsp;&nbsp;- soal beserta kunci dan pedoman penskoran;<br/>
-                  &nbsp;&nbsp;&nbsp;- lembar observasi;<br/>
-                  &nbsp;&nbsp;&nbsp;- rubrik analitik;<br/>
-                  &nbsp;&nbsp;&nbsp;- bahan ajar ringkas;<br/>
-                  &nbsp;&nbsp;&nbsp;- pertanyaan refleksi murid dan guru.
-                </div>
-                <div class="pt-1 font-bold">STRUKTUR RPM:</div>
-                <div>1. Identitas</div>
-                <div>2. Identifikasi: kesiapan murid, karakteristik materi, dimensi profil lulusan</div>
-                <div>3. Desain Pembelajaran: tujuan pembelajaran (ABCD, terukur), lintas disiplin ilmu, topik kontekstual, praktik pedagogis (model/strategi + alasan), kemitraan pembelajaran, lingkungan belajar, pemanfaatan teknologi digital</div>
-                <div>
-                  4. Pengalaman Belajar per pertemuan, dengan tahapan:<br/>
-                  &nbsp;&nbsp;&nbsp;- Memahami (berkesadaran &amp; bermakna)<br/>
-                  &nbsp;&nbsp;&nbsp;- Mengaplikasi (bermakna &amp; menggembirakan)<br/>
-                  &nbsp;&nbsp;&nbsp;- Merefleksi (berkesadaran)<br/>
-                  &nbsp;&nbsp;&nbsp;Sertakan awal, inti, penutup, dengan kegiatan guru dan murid, durasi menit, serta pertanyaan pemantik.
-                </div>
-                <div>5. Asesmen: awal (diagnostik), proses (formatif, dengan rubrik/instrumen), akhir (sumatif, dengan rubrik 4 level)</div>
-                <div>6. Lampiran: LKPD singkat, bahan ajar ringkas, rubrik, dan tindak lanjut (pengayaan &amp; remedial)</div>
-                <div class="text-right pt-1">
-                  <span class="text-[10px] font-sans font-extrabold uppercase tracking-wider text-blue-700 bg-blue-50 px-2 py-0.5 rounded inline-block">Copy sampai sini ya</span>
-                </div>
+              <div class="px-3 py-2 rounded-xl bg-blue-50/70 border border-blue-200/70 text-[11px] text-blue-950 flex items-center gap-2">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-blue-700 shrink-0"></i>
+                <span><strong>${selectedModel} Aktif:</strong> ${(AI_MODELS.find(x => x.id === selectedModel) || AI_MODELS[0]).desc}</span>
               </div>
             </div>
 
             <form onsubmit="window.app.executeGenerateRpm(event)" class="space-y-3.5">
               <div>
-                <label class="font-bold text-xs text-slate-700 block mb-1.5">Data Pembelajaran Guru:</label>
-                <textarea id="ai-rpm-prompt" rows="10" required
-                  placeholder="Tempelkan (paste) prompt RPM yang telah Anda isi di sini..."
+                <label class="font-bold text-xs text-slate-700 block mb-1.5">Tulis Perintah ke ${selectedModel}:</label>
+                <textarea id="ai-rpm-prompt" rows="8" required
+                  placeholder="Tuliskan perintah Anda secara bebas di sini. Contoh: Buatkan RPM mata pelajaran Informatika kelas 9 tentang Berpikir Komputasional untuk 2 pertemuan (2 x 80 menit) dengan model Problem-Based Learning, lengkap dengan LKPD dan rubrik penilaian..."
                   oninput="window.app.updateRpmInputState(this.value)"
-                  class="w-full p-3.5 text-xs font-mono rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 outline-none leading-relaxed transition bg-white">${currentInput}</textarea>
+                  class="w-full p-3.5 text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 outline-none leading-relaxed transition bg-white">${currentInput}</textarea>
               </div>
 
               <button type="submit" ${isGenerating ? 'disabled' : ''}
                 class="w-full py-3 px-4 rounded-xl bg-[#072B7A] hover:bg-blue-800 text-white font-bold text-xs shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2 transition active:scale-[0.99] disabled:opacity-60">
                 ${isGenerating ? `
                   <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Sedang Menyusun RPM...</span>
+                  <span>${selectedModel} Sedang Menyusun RPM Mendalam...</span>
                 ` : `
                   <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i>
-                  <span>Generate RPM Sekarang</span>
+                  <span>Generate RPM dengan ${selectedModel}</span>
                 `}
               </button>
             </form>
@@ -1478,7 +1805,7 @@ ATURAN:
             ${isGenerating ? `
               <div class="p-12 text-center space-y-3">
                 <div class="w-10 h-10 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
-                <div class="font-bold text-sm text-slate-800">Menyusun Rencana Pembelajaran Mendalam...</div>
+                <div class="font-bold text-sm text-slate-800">${selectedModel} Sedang Menganalisis Perintah & Menyusun RPM...</div>
               </div>
             ` : result ? `
               <div id="ai-rpm-content-box" class="text-xs text-slate-800 space-y-4 max-h-[540px] overflow-y-auto custom-scroll pr-1 bg-slate-50/60 p-4 rounded-xl border border-slate-200/70">
@@ -1488,7 +1815,7 @@ ATURAN:
               <div class="py-14 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-8 space-y-2">
                 <i data-lucide="book-open-check" class="w-8 h-8 text-blue-600 mx-auto"></i>
                 <div class="font-bold text-slate-600">Belum Ada RPM yang Dibuat</div>
-                <p class="text-slate-400 max-w-sm mx-auto">Tulis data pembelajaran Anda di sebelah kiri lalu klik <strong>Generate RPM Sekarang</strong>.</p>
+                <p class="text-slate-400 max-w-sm mx-auto">Pilih model AI (Claude AI, Gemini, atau ChatGPT), tulis perintah Anda di sebelah kiri, lalu klik <strong>Generate RPM</strong>.</p>
               </div>
             `}
           </div>
@@ -1498,13 +1825,19 @@ ATURAN:
 
     function renderAiSoalSection(isGenerating, t) {
       const result = state.aiGeneratedSoal;
+      const currentSoalInput = state.aiSoalInputText || '';
       return `
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-4">
-            <div class="border-b border-slate-100 pb-3">
-              <span class="text-[11px] font-extrabold uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full">Generate Soal dengan AI</span>
-              <h4 class="text-base font-extrabold text-slate-900 mt-1">Kolom Perintah Pembuatan Soal</h4>
-              <p class="text-xs text-slate-500">Tentukan topik, jumlah soal PG/Uraian, dan tingkat kesulitan soal.</p>
+            <div class="border-b border-slate-100 pb-3 flex items-start justify-between gap-2">
+              <div>
+                <span class="text-[11px] font-extrabold uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full">Generate Soal dengan AI</span>
+                <h4 class="text-base font-extrabold text-slate-900 mt-1">Kolom Perintah Pembuatan Soal</h4>
+                <p class="text-xs text-slate-500">AI membaca topik, jenjang kelas, jumlah PG & Uraian, serta tingkat kesulitan HOTS secara mendalam.</p>
+              </div>
+              <button type="button" onclick="window.app.resetSoalPromptInput()" class="text-[11px] font-extrabold text-rose-600 hover:text-rose-800 underline shrink-0">
+                Bersihkan Kolom
+              </button>
             </div>
 
             <div class="space-y-1.5">
@@ -1512,11 +1845,11 @@ ATURAN:
               <div class="flex flex-wrap gap-1.5">
                 <button type="button" onclick="window.app.setSoalPromptTemplate(1)"
                   class="text-[11px] font-semibold bg-slate-50 hover:bg-purple-50 text-slate-700 hover:text-purple-700 border border-slate-200 px-2.5 py-1 rounded-lg transition text-left">
-                  📝 5 PG HOTS & 2 Uraian Lengkap Kunci Jawaban
+                  📝 5 PG HOTS & 3 Uraian Lengkap Kisi-Kisi + Pembahasan
                 </button>
                 <button type="button" onclick="window.app.setSoalPromptTemplate(2)"
                   class="text-[11px] font-semibold bg-slate-50 hover:bg-purple-50 text-slate-700 hover:text-purple-700 border border-slate-200 px-2.5 py-1 rounded-lg transition text-left">
-                  📝 Paket Soal Ulangan Harian & Rubrik Penskoran
+                  📝 10 PG & 5 Uraian Ulangan Harian + Rubrik Skor
                 </button>
               </div>
             </div>
@@ -1525,15 +1858,16 @@ ATURAN:
               <div>
                 <label class="font-bold text-xs text-slate-700 block mb-1.5">Perintah / Keinginan Soal:</label>
                 <textarea id="ai-soal-prompt" rows="6" required
-                  placeholder="Contoh: Buatkan 5 soal pilihan ganda HOTS beserta 2 soal uraian untuk mata pelajaran Informatika kelas 9 tentang Jaringan Komputer & Keamanan Data. Lengkapi dengan kunci jawaban dan pedoman penskorannya..."
-                  class="w-full p-3.5 text-xs rounded-xl border border-slate-200 focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20 outline-none leading-relaxed transition bg-white"></textarea>
+                  oninput="window.app.updateSoalInputState(this.value)"
+                  placeholder="Contoh: Buatkan 10 soal pilihan ganda HOTS beserta 3 soal uraian untuk mata pelajaran IPA kelas 8 tentang Sistem Pernapasan Manusia. Lengkapi dengan kisi-kisi, kunci jawaban, pembahasan per nomor, dan pedoman penskorannya..."
+                  class="w-full p-3.5 text-xs rounded-xl border border-slate-200 focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20 outline-none leading-relaxed transition bg-white">${currentSoalInput}</textarea>
               </div>
 
               <button type="submit" ${isGenerating ? 'disabled' : ''}
                 class="w-full py-3 px-4 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs shadow-lg shadow-purple-900/20 flex items-center justify-center gap-2 transition active:scale-[0.99] disabled:opacity-60">
                 ${isGenerating ? `
                   <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Sedang Menyusun Paket Soal...</span>
+                  <span>Sedang Menyusun Kisi-Kisi, Naskah Soal & Pembahasan...</span>
                 ` : `
                   <i data-lucide="sparkles" class="w-4 h-4 text-amber-300"></i>
                   <span>Generate Paket Soal Sekarang</span>
@@ -2338,8 +2672,20 @@ ATURAN:
         renderActiveModule();
       },
 
+      selectAiModel(modelName) {
+        state.selectedAiModel = modelName;
+        saveLocalState();
+        renderActiveModule();
+        showToast(`Model AI diatur ke: ${modelName}`);
+      },
+
       updateRpmInputState(val) {
         state.aiRpmInputText = val;
+        saveLocalState();
+      },
+
+      updateSoalInputState(val) {
+        state.aiSoalInputText = val;
         saveLocalState();
       },
 
@@ -2348,66 +2694,27 @@ ATURAN:
         const el = document.getElementById('ai-rpm-prompt');
         if (el) el.value = '';
         saveLocalState();
-        showToast('Kolom data pembelajaran guru telah dibersihkan.');
+        showToast('Kolom perintah RPM telah dibersihkan.');
       },
 
-      copyRpmGuidePrompt() {
-        copyToClipboard(RPM_PROMPT_GUIDE_COPY_TEXT);
+      resetSoalPromptInput() {
+        state.aiSoalInputText = '';
+        const el = document.getElementById('ai-soal-prompt');
+        if (el) el.value = '';
+        saveLocalState();
+        showToast('Kolom perintah soal telah dibersihkan.');
       },
 
-      downloadRpmGuideWord() {
-        const guideHtml = `
-          <div style="font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #111827;">
-            <p><strong>Panduan Pembuatan Prompt :</strong></p>
-            <ol>
-              <li>Isi data yang diperlukan (semakin banyak informasi/data yang diberikan semakin bagus hasilnya)</li>
-              <li>Hapus dan ganti <span style="color: #DC2626; font-weight: bold;">teks berwarna merah</span></li>
-              <li>Jika dirasa cukup salin/copy semua data yang telah diisi kemudian paste pada kolom Generate RPM dengan AI</li>
-              <li>Jangan lupa cek Kembali hasilnya, unduh dan edit bagian yang tidak sesuai (ingat AI hanya membantu dan bisa salah)</li>
-            </ol>
-            <p style="color: #1D4ED8; font-weight: bold; margin-top: 14pt;">Copy nya nanti dari sini ya !</p>
-            <div style="border: 1pt solid #94A3B8; padding: 10pt; background-color: #F8FAFC;">
-              <p><strong>Peran:</strong> Kamu adalah pakar kurikulum dan pedagogi Indonesia yang menguasai pendekatan Pembelajaran Mendalam (Kemendikdasmen).</p>
-              <p><strong>Tugas:</strong> Susun Rencana Pembelajaran Mendalam (RPM) yang siap pakai, operasional, dan kontekstual.</p>
-              <p><strong>DATA:</strong><br/>
-              1. Nama satuan pendidikan: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
-              2. Nama guru: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
-              3. Jenjang pendidikan: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
-              4. Mata pelajaran: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
-              5. Fase dan kelas: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
-              6. Semester dan tahun ajaran: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
-              7. Topik atau materi: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
-              8. Jumlah pertemuan: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
-              9. Alokasi waktu setiap pertemuan: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
-              10. Capaian Pembelajaran: <span style="color: #DC2626; font-weight: bold;">[tempelkan kutipan CP dari sumber resmi]</span><br/>
-              11. Pengetahuan awal dan kebutuhan belajar murid: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
-              12. Sarana, media, dan lingkungan belajar: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
-              13. Tujuan pembelajaran : <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
-              <span style="color: #DC2626; font-weight: bold;">
-              14. Instrumen dan lampiran, Sertakan sesuai kebutuhan :<br/>
-              &nbsp;&nbsp;&nbsp;- LKPD dengan petunjuk, tugas, dan hasil yang diharapkan;<br/>
-              &nbsp;&nbsp;&nbsp;- soal beserta kunci dan pedoman penskoran;<br/>
-              &nbsp;&nbsp;&nbsp;- lembar observasi;<br/>
-              &nbsp;&nbsp;&nbsp;- rubrik analitik;<br/>
-              &nbsp;&nbsp;&nbsp;- bahan ajar ringkas;<br/>
-              &nbsp;&nbsp;&nbsp;- pertanyaan refleksi murid dan guru.
-              </span></p>
-              <p><strong>STRUKTUR RPM:</strong><br/>
-              1. Identitas<br/>
-              2. Identifikasi: kesiapan murid, karakteristik materi, dimensi profil lulusan<br/>
-              3. Desain Pembelajaran: tujuan pembelajaran (ABCD, terukur), lintas disiplin ilmu, topik kontekstual, praktik pedagogis (model/strategi + alasan), kemitraan pembelajaran, lingkungan belajar, pemanfaatan teknologi digital<br/>
-              4. Pengalaman Belajar per pertemuan, dengan tahapan:<br/>
-              &nbsp;&nbsp;&nbsp;- Memahami (berkesadaran &amp; bermakna)<br/>
-              &nbsp;&nbsp;&nbsp;- Mengaplikasi (bermakna &amp; menggembirakan)<br/>
-              &nbsp;&nbsp;&nbsp;- Merefleksi (berkesadaran)<br/>
-              &nbsp;&nbsp;&nbsp;Sertakan awal, inti, penutup, dengan kegiatan guru dan murid, durasi menit, serta pertanyaan pemantik.<br/>
-              5. Asesmen: awal (diagnostik), proses (formatif, dengan rubrik/instrumen), akhir (sumatif, dengan rubrik 4 level)<br/>
-              6. Lampiran: LKPD singkat, bahan ajar ringkas, rubrik, dan tindak lanjut (pengayaan &amp; remedial)</p>
-            </div>
-            <p style="text-align: right; color: #1D4ED8; font-weight: bold;">Copy sampai sini ya</p>
-          </div>
-        `;
-        downloadWordDoc('Panduan_Pembuatan_Prompt_RPM', 'Panduan Pembuatan Prompt RPM', guideHtml);
+      setSoalPromptTemplate(tplNo) {
+        const mapel = state.teacher?.subject_name || 'Informatika';
+        const promptText = tplNo === 1
+          ? `Buatkan 5 soal Pilihan Ganda HOTS (level analisis C4-C5) dan 3 soal Uraian studi kasus untuk mata pelajaran ${mapel} Kelas 9 tentang Berpikir Komputasional dan Literasi Digital. Sertakan tabel kisi-kisi soal, kunci jawaban, pembahasan mendalam setiap nomor, serta rubrik pedoman penskoran lengkap.`
+          : `Buatkan 10 soal Pilihan Ganda dan 5 soal Uraian untuk Ulangan Harian mata pelajaran ${mapel} Kelas 9 tentang Jaringan Komputer & Keamanan Data. Lengkapi dengan kisi-kisi penulisan soal, kunci jawaban, pembahasan lengkap, dan pedoman penskoran akhir.`;
+        state.aiSoalInputText = promptText;
+        const el = document.getElementById('ai-soal-prompt');
+        if (el) el.value = promptText;
+        saveLocalState();
+        showToast('Contoh perintah soal berhasil dimasukkan!');
       },
 
       deleteGeneratedRpm() {
@@ -2425,16 +2732,16 @@ ATURAN:
         const promptVal = document.getElementById('ai-rpm-prompt')?.value?.trim();
         if (!promptVal) return;
 
+        const chosenModel = state.selectedAiModel || 'Claude AI';
         state.aiRpmInputText = promptVal;
         state.aiIsGenerating = true;
         renderActiveModule();
 
-        const systemPrompt = `${RPM_SYSTEM_INSTRUCTION}
+        const systemPrompt = `Anda adalah ${chosenModel}, pakar kurikulum dan pedagogi tingkat tinggi yang sangat memahami perintah guru secara mendalam.
+Susun dokumen Rencana Pembelajaran Mendalam (RPM) yang sangat lengkap, operasional, kontekstual, dan langsung siap digunakan berdasarkan perintah guru.
+Sajikan hasil akhir dalam format HTML bersih (menggunakan tag <div>, <h3>, <h4>, <p>, <table>, <thead>, <tbody>, <tr>, <th>, <td>, <ul>, <ol>, <li> tanpa tag <html> atau <body>) yang rapi dan siap diunduh ke Microsoft Word maupun PDF.`;
 
-INSTRUKSI FORMAT HTML KELUARAN:
-Sajikan hasil akhir dalam format HTML bersih (menggunakan tag <div>, <h4>, <h5>, <p>, <table>, <thead>, <tbody>, <tr>, <th>, <td>, <ul>, <ol>, <li> tanpa tag <html> atau <body>) yang rapi, profesional, dan siap dipindahkan ke Microsoft Word. Ikuti urutan 6 Bagian STRUKTUR RPM.`;
-
-        const userPrompt = `DATA PEMBELAJARAN DARI GURU:\n${promptVal}`;
+        const userPrompt = `Model AI: ${chosenModel}\nGuru Penyusun: ${state.teacher?.full_name || 'Guru'}\nSekolah: ${state.teacher?.school_name || 'Sekolah'}\nMata Pelajaran Default: ${state.teacher?.subject_name || 'Informatika'}\n\nPERINTAH GURU:\n${promptVal}`;
 
         try {
           const fenceRegex = new RegExp('\\x60{3}(?:html)?', 'gi');
@@ -2442,28 +2749,31 @@ Sajikan hasil akhir dalam format HTML bersih (menggunakan tag <div>, <h4>, <h5>,
           if (generatedHtml) {
             generatedHtml = generatedHtml.replace(fenceRegex, '').trim();
           } else {
-            generatedHtml = generateSmartRpmFallback(promptVal);
+            generatedHtml = generateSmartRpmFallback(promptVal, chosenModel);
           }
 
-          const parsed = parseRpmFields(promptVal);
+          const parsed = analyzeTeacherCommand(promptVal);
           const topicLabel = parsed.topik || state.teacher?.subject_name || 'Pembelajaran';
 
           state.aiGeneratedRpm = {
             prompt: promptVal,
+            aiModel: chosenModel,
             formattedHtml: generatedHtml,
-            title: `RPM - ${topicLabel} (${new Date().toLocaleDateString('id-ID')})`
+            title: `RPM (${chosenModel}) - ${topicLabel} (${new Date().toLocaleDateString('id-ID')})`
           };
           saveLocalState();
-          showToast('Rencana Pembelajaran Mendalam (RPM) selesai disusun!');
+          showToast(`RPM berhasil disusun secara mendalam oleh ${chosenModel}!`);
         } catch (err) {
-          const fallbackHtml = generateSmartRpmFallback(promptVal);
+          const fallbackHtml = generateSmartRpmFallback(promptVal, chosenModel);
+          const parsed = analyzeTeacherCommand(promptVal);
           state.aiGeneratedRpm = {
             prompt: promptVal,
+            aiModel: chosenModel,
             formattedHtml: fallbackHtml,
-            title: `RPM - ${state.teacher?.subject_name || 'Pembelajaran'}`
+            title: `RPM (${chosenModel}) - ${parsed.topik || state.teacher?.subject_name || 'Pembelajaran'}`
           };
           saveLocalState();
-          showToast('RPM selesai disusun!');
+          showToast(`RPM selesai disusun oleh ${chosenModel}!`);
         } finally {
           state.aiIsGenerating = false;
           renderActiveModule();
@@ -2475,20 +2785,23 @@ Sajikan hasil akhir dalam format HTML bersih (menggunakan tag <div>, <h4>, <h5>,
         const promptVal = document.getElementById('ai-soal-prompt')?.value?.trim();
         if (!promptVal) return;
 
+        state.aiSoalInputText = promptVal;
         state.aiIsGenerating = true;
         renderActiveModule();
 
-        const systemPrompt = `Anda adalah Pakar Evaluasi Pendidikan Indonesia.
-Susun naskah soal lengkap dalam format HTML bersih (gunakan tag <div>, <h4>, <p>, <ol>, <ul>, <li> tanpa tag html/body) yang mencakup:
+        const systemPrompt = `Anda adalah Pakar Evaluasi Pendidikan dan Penyusun Instrumen Asesmen Nasional/HOTS tingkat tinggi.
+Baca dengan sangat cermat dan mendalam perintah guru terkait mata pelajaran, kelas, topik, jumlah soal Pilihan Ganda, jumlah soal Uraian, serta tingkat kognitif yang diminta.
+Susun naskah asesmen komprehensif dalam format HTML bersih (gunakan tag <div>, <h4>, <p>, <table>, <thead>, <tbody>, <tr>, <th>, <td>, <ol>, <ul>, <li> tanpa tag html/body) yang mencakup:
 1. Identitas Naskah Soal
-2. Soal Pilihan Ganda HOTS
-3. Soal Uraian Kontekstual
-4. Kunci Jawaban & Rubrik Penskoran.`;
+2. Tabel Kisi-Kisi Penulisan Soal (No, Materi, Indikator Soal, Level Kognitif, Bentuk Soal)
+3. Naskah Soal Pilihan Ganda HOTS (sesuai jumlah yang diminta guru, lengkap dengan stimulus kontekstual)
+4. Naskah Soal Uraian / Studi Kasus (sesuai jumlah yang diminta guru)
+5. Kunci Jawaban, Pembahasan Mendalam per Nomor, serta Pedoman Penskoran & Rubrik Analitik.`;
 
         const userPrompt = `Guru: ${state.teacher?.full_name || 'Guru'}
 Sekolah: ${state.teacher?.school_name || 'Sekolah'}
-Mapel: ${state.teacher?.subject_name || 'Informatika'}
-Permintaan Soal: "${promptVal}"`;
+Mapel Default: ${state.teacher?.subject_name || 'Informatika'}
+Perintah Pembuatan Soal: "${promptVal}"`;
 
         try {
           const fenceRegex = new RegExp('\\x60{3}(?:html)?', 'gi');
@@ -2499,22 +2812,24 @@ Permintaan Soal: "${promptVal}"`;
             generatedHtml = generateSmartSoalFallback(promptVal);
           }
 
+          const parsed = analyzeTeacherCommand(promptVal);
           state.aiGeneratedSoal = {
             prompt: promptVal,
             formattedHtml: generatedHtml,
-            title: `Paket Soal - ${state.teacher?.subject_name || 'Mapel'} (${new Date().toLocaleDateString('id-ID')})`
+            title: `Paket Soal - ${parsed.mataPelajaran} (${parsed.topik})`
           };
           saveLocalState();
-          showToast('Paket Soal & Kunci Jawaban berhasil dibuat!');
+          showToast('Paket Soal, Kisi-Kisi & Pembahasan Mendalam berhasil dibuat!');
         } catch (err) {
           const fallbackHtml = generateSmartSoalFallback(promptVal);
+          const parsed = analyzeTeacherCommand(promptVal);
           state.aiGeneratedSoal = {
             prompt: promptVal,
             formattedHtml: fallbackHtml,
-            title: `Paket Soal - ${state.teacher?.subject_name || 'Mapel'}`
+            title: `Paket Soal - ${parsed.mataPelajaran} (${parsed.topik})`
           };
           saveLocalState();
-          showToast('Paket Soal selesai disusun!');
+          showToast('Paket Soal, Kisi-Kisi & Pembahasan selesai disusun!');
         } finally {
           state.aiIsGenerating = false;
           renderActiveModule();
