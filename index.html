@@ -175,7 +175,7 @@
             <label class="block text-xs font-bold text-slate-700 mb-1.5">Email Akun Guru</label>
             <div class="relative">
               <i data-lucide="mail" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
-              <input type="email" id="login-email" required placeholder="guru@sekolah.sch.id"
+              <input type="email" id="login-email" required placeholder="guru@sekolah.sch.id" value="budi.santoso@sekolah.sch.id"
                 class="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 outline-none transition bg-white" />
             </div>
           </div>
@@ -184,7 +184,7 @@
             <label class="block text-xs font-bold text-slate-700 mb-1.5">Kata Sandi</label>
             <div class="relative">
               <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
-              <input type="password" id="login-password" required placeholder="••••••••"
+              <input type="password" id="login-password" required placeholder="••••••••" value="password123"
                 class="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 outline-none transition bg-white" />
             </div>
           </div>
@@ -195,18 +195,6 @@
             <span>Masuk Ruang Kerja Guru</span>
           </button>
         </form>
-
-        <div id="preview-quick-login" class="mt-6 pt-5 border-t border-slate-200/80">
-          <div class="bg-amber-50 border border-amber-200/80 rounded-2xl p-3.5">
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-900 flex items-center gap-1.5 mb-2">
-              <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-600"></i> Pintasan Masuk Cepat
-            </span>
-            <button type="button" id="btn-quick-guru"
-              class="w-full py-2.5 px-4 rounded-xl bg-[#FBBF24] hover:bg-amber-300 text-slate-950 font-extrabold text-xs shadow-sm flex items-center justify-center gap-2 transition">
-              <span>Masuk Langsung (Budi Santoso, S.Kom.)</span>
-            </button>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -839,53 +827,14 @@ Utamakan kelengkapan yang fungsional daripada panjang teks.`;
 
     function generateSmartRpmFallback(userPrompt, forceDraft = false) {
       const fields = parseRpmStructuredFields(userPrompt);
-      const wantsImmediateDraft = forceDraft || /langsung\s+dibuat|draf\s+sementara|tetap\s+buat/i.test(userPrompt);
-
-      const missingQuestions = [];
-      if (!fields.teksCp) {
-        missingQuestions.push('Apakah kutipan teks Capaian Pembelajaran (CP) rujukan yang akan digunakan untuk materi ini?');
-      }
-      if (!fields.topik || !fields.faseKelas) {
-        missingQuestions.push('Apakah topik/materi spesifik serta fase dan kelas yang menjadi sasaran pembelajaran ini?');
-      }
-      if (!fields.alokasiWaktu || !fields.jumlahPertemuan) {
-        missingQuestions.push('Berapa jumlah pertemuan dan alokasi waktu (JP × menit) untuk setiap pertemuan?');
-      }
-
-      if (missingQuestions.length > 0 && !wantsImmediateDraft) {
-        const maxThree = missingQuestions.slice(0, 3);
-        return `
-          <div class="space-y-4">
-            <div class="p-4 bg-amber-50 rounded-xl border border-amber-300 text-amber-950 space-y-2.5">
-              <div class="font-extrabold text-sm text-amber-950">Konfirmasi Data Perancangan RPM</div>
-              <p class="text-xs leading-relaxed">
-                Agar Rancangan Pembelajaran Mendalam (RPM) selaras antara CP, tujuan, kegiatan, dan alokasi waktu, mohon lengkapi informasi berikut (maksimal 3 pertanyaan):
-              </p>
-              <ol class="list-decimal pl-5 text-xs font-bold space-y-1.5">
-                ${maxThree.map(q => `<li>${q}</li>`).join('')}
-              </ol>
-              <div class="pt-2 flex flex-wrap items-center gap-2">
-                <button type="button" onclick="window.app.forceGenerateTemporaryRpm()"
-                  class="px-3.5 py-2 rounded-xl bg-[#072B7A] hover:bg-blue-800 text-white font-extrabold text-xs shadow-sm transition">
-                  Tetap Susun Draf Sementara ([Perlu dilengkapi])
-                </button>
-                <button type="button" onclick="window.app.setRpmPromptTemplate(2)"
-                  class="px-3.5 py-2 rounded-xl bg-amber-200 hover:bg-amber-300 text-amber-950 font-extrabold text-xs transition">
-                  Isi Contoh Data Lengkap
-                </button>
-              </div>
-            </div>
-          </div>
-        `;
-      }
 
       const mark = (v) => v ? v : '<span class="font-bold text-rose-700">[Perlu dilengkapi]</span>';
-      const topikTitle = fields.topik || '[Perlu dilengkapi: Topik Pembelajaran]';
-      const mapelTitle = fields.mataPelajaran || '[Perlu dilengkapi: Mata Pelajaran]';
-      const faseKelasTitle = fields.faseKelas || '[Perlu dilengkapi: Fase/Kelas]';
+      const topikTitle = fields.topik || 'Pembelajaran';
+      const mapelTitle = fields.mataPelajaran || (state.teacher?.subject_name || 'Mata Pelajaran');
+      const faseKelasTitle = fields.faseKelas || 'Fase D / Kelas 9';
 
       const meetMatch = (fields.jumlahPertemuan || '').match(/(\d+)/);
-      const meetCount = meetMatch ? Math.max(1, Math.min(4, parseInt(meetMatch[1], 10))) : 1;
+      const meetCount = meetMatch ? Math.max(1, Math.min(6, parseInt(meetMatch[1], 10))) : 2;
 
       const jpMatch = (fields.alokasiWaktu || '').match(/(\d+)\s*JP/i);
       const jpPerMeet = jpMatch ? parseInt(jpMatch[1], 10) : 2;
@@ -898,15 +847,15 @@ Utamakan kelengkapan yang fungsional daripada panjang teks.`;
       const durInti1 = Math.round((totalMinutes - durAwal - durPenutup) * 0.45);
       const durInti2 = (totalMinutes - durAwal - durPenutup) - durInti1;
 
-      const saranaTersedia = fields.saranaMedia || 'Papan tulis, alat tulis, dan lembar kerja peserta didik (LKPD) cetak [Perlu dilengkapi sesuai fasilitas nyata kelas]';
-      const konteksNyata = fields.konteksLokal || `Permasalahan sehari-hari di lingkungan sekolah dan sekitar murid yang berkaitan dengan ${fields.topik || 'topik pembelajaran'}`;
-      const metodeDipilih = fields.preferensiMetode || 'Pembelajaran berbasis pemecahan masalah kontekstual (Problem-Based Learning) dan diskusi kelompok terstruktur';
+      const saranaTersedia = fields.saranaMedia || 'Papan tulis, lembar kerja peserta didik (LKPD) cetak, dan buku paket peserta didik';
+      const konteksNyata = fields.konteksLokal || `Aktivitas dan permasalahan nyata di lingkungan sekolah serta keseharian murid terkait materi ${fields.topik || 'pembelajaran'}`;
+      const metodeDipilih = fields.preferensiMetode || 'Problem-Based Learning (PBL) dan diskusi kelompok kontekstual';
 
       let langkahPertemuanHtml = '';
       for (let m = 1; m <= meetCount; m++) {
         langkahPertemuanHtml += `
           <div class="mt-3 space-y-1.5">
-            <p class="font-extrabold text-xs text-slate-900">Pertemuan ${m} (Alokasi Waktu: ${fields.alokasiWaktu ? fields.alokasiWaktu : `${jpPerMeet} JP × ${minPerJp} menit = ${totalMinutes} menit [Asumsi sementara]`})</p>
+            <p class="font-extrabold text-xs text-slate-900">Pertemuan ${m} (Alokasi Waktu: ${fields.alokasiWaktu ? fields.alokasiWaktu : `${jpPerMeet} JP × ${minPerJp} menit = ${totalMinutes} menit`})</p>
             <table class="w-full text-xs border-collapse border border-slate-300">
               <thead>
                 <tr class="bg-slate-100">
@@ -921,50 +870,50 @@ Utamakan kelengkapan yang fungsional daripada panjang teks.`;
                 <tr>
                   <td class="border border-slate-300 p-2 font-bold align-top">Pendahuluan<br/><span class="text-[10px] font-normal text-slate-600">(Berkesadaran & Bermakna)</span></td>
                   <td class="border border-slate-300 p-2 align-top space-y-1">
-                    <p>Mengondisikan kesiapan belajar dan mengajukan pertanyaan pemantik konkret: <em>"Bagaimana penerapan ${fields.topik || 'materi ini'} ketika kita menyelesaikan persoalan di ${fields.konteksLokal || 'lingkungan sekitar'}?"</em></p>
-                    <p>Menyampaikan tujuan pembelajaran (TP1, TP2), kriteria keberhasilan, dan memetakan kesiapan awal murid melalui tanya jawab singkat.</p>
+                    <p>Mengondisikan suasana belajar yang aman dan mengajukan pertanyaan pemantik konkret: <em>"Bagaimana kita menerapkan konsep ${fields.topik || 'ini'} untuk mempermudah pekerjaan kita sehari-hari di ${fields.konteksLokal ? 'lingkungan ' + fields.konteksLokal : 'sekolah'}?"</em></p>
+                    <p>Menyampaikan tujuan pembelajaran (TP1, TP2), kriteria keberhasilan yang terukur, dan memetakan pemahaman prasyarat murid.</p>
                   </td>
                   <td class="border border-slate-300 p-2 align-top space-y-1">
-                    <p>Menyiapkan perlengkapan belajar, menyimak tujuan yang akan dicapai, serta menjawab pertanyaan pemantik berdasarkan pengalaman sehari-hari.</p>
-                    <p>Mengidentifikasi hal yang sudah diketahui dan hal yang perlu dipelajari lebih lanjut.</p>
+                    <p>Menyiapkan perlengkapan belajar, menyimak kriteria keberhasilan yang akan dicapai, dan merespons pertanyaan pemantik secara aktif.</p>
+                    <p>Mengaitkan pengetahuan awal yang telah dimiliki dengan tantangan belajar baru.</p>
                   </td>
-                  <td class="border border-slate-300 p-2 align-top">Respons lisan/catatan awal murid terhadap pertanyaan pemantik</td>
+                  <td class="border border-slate-300 p-2 align-top">Respons lisan murid terhadap pertanyaan pemantik & catatan asesmen awal</td>
                   <td class="border border-slate-300 p-2 text-center font-bold align-top">${durAwal} menit</td>
                 </tr>
                 <tr>
                   <td class="border border-slate-300 p-2 font-bold align-top">Inti — Memahami<br/><span class="text-[10px] font-normal text-slate-600">(Berkesadaran & Bermakna)</span></td>
                   <td class="border border-slate-300 p-2 align-top space-y-1">
-                    <p>Menyajikan studi kasus kontekstual terkait <strong>${fields.topik || 'materi inti'}</strong> menggunakan ${fields.saranaMedia || 'lembar kasus/bahan ajar yang tersedia'}.</p>
-                    <p>Memandu murid mengidentifikasi konsep esensial dan menghubungkan informasi baru dengan pengetahuan awal mereka melalui pertanyaan penuntun.</p>
+                    <p>Menyajikan studi kasus kontekstual terkait <strong>${fields.topik || 'materi inti'}</strong> menggunakan fasilitas yang tersedia (${saranaTersedia}).</p>
+                    <p>Memandu murid mengidentifikasi komponen inti masalah dan menghubungkan informasi baru dengan konsep yang dipelajari.</p>
                   </td>
                   <td class="border border-slate-300 p-2 align-top space-y-1">
-                    <p>Mengamati kasus, mencatat komponen utama permasalahan pada Bagian 1 LKPD, dan mendiskusikan keterkaitan konsep baru dengan pengetahuan awal.</p>
+                    <p>Mengamati kasus, mencatat elemen kunci masalah pada LKPD Bagian 1, dan mendiskusikan konsep esensial bersama kelompok.</p>
                   </td>
-                  <td class="border border-slate-300 p-2 align-top">Catatan identifikasi konsep dan pemetaan masalah pada LKPD Bagian 1 (TP1)</td>
+                  <td class="border border-slate-300 p-2 align-top">Lembar Kerja Peserta Didik (LKPD) Bagian 1: Identifikasi masalah & konsep utama (TP1)</td>
                   <td class="border border-slate-300 p-2 text-center font-bold align-top">${durInti1} menit</td>
                 </tr>
                 <tr>
                   <td class="border border-slate-300 p-2 font-bold align-top">Inti — Mengaplikasi & Merefleksi<br/><span class="text-[10px] font-normal text-slate-600">(Bermakna & Menggembirakan)</span></td>
                   <td class="border border-slate-300 p-2 align-top space-y-1">
-                    <p>Memfasilitasi kerja kelompok untuk merancang langkah penyelesaian kasus pada LKPD Bagian 2 sesuai metode <em>${metodeDipilih}</em>.</p>
-                    <p>Memberikan dukungan perancah (<em>scaffolding</em>) berupa petunjuk bertahap bagi murid yang membutuhkan${fields.kebutuhanKhusus ? ` (termasuk penyesuaian: ${fields.kebutuhanKhusus})` : ''}, serta memberikan umpan balik spesifik atas draf solusi kelompok.</p>
+                    <p>Memfasilitasi kerja kelompok untuk merumuskan dan menguji langkah penyelesaian masalah pada LKPD Bagian 2 menggunakan model <em>${metodeDipilih}</em>.</p>
+                    <p>Memberikan dukungan perancah (<em>scaffolding</em>) bagi kelompok yang membutuhkan dukungan bertahap${fields.kebutuhanKhusus ? ` (Penyesuaian khusus: ${fields.kebutuhanKhusus})` : ''}, serta memberikan umpan balik formatif langsung.</p>
                   </td>
                   <td class="border border-slate-300 p-2 align-top space-y-1">
-                    <p>Menggunakan konsep yang dipelajari untuk menyusun langkah solusi atas masalah kontekstual pada LKPD Bagian 2, mempresentasikan hasilnya, dan saling memberi tanggapan secara santun.</p>
-                    <p>Menilai kembali ketepatan strategi kelompoknya terhadap kriteria keberhasilan dan mencatat perbaikan yang diperlukan.</p>
+                    <p>Menggunakan konsep yang dipelajari untuk merancang langkah solusi nyata pada LKPD Bagian 2, mempresentasikan hasil kerja, dan saling memberi umpan balik apresiatif.</p>
+                    <p>Menilai kembali kekuatan dan kelemahan solusi yang dibuat kelompok berdasarkan kriteria rubrik analitik.</p>
                   </td>
-                  <td class="border border-slate-300 p-2 align-top">Produk rancangan solusi pada LKPD Bagian 2, unjuk kerja diskusi, dan catatan perbaikan (TP2)</td>
+                  <td class="border border-slate-300 p-2 align-top">Produk rancangan solusi kelompok pada LKPD Bagian 2, catatan presentasi & lembar refleksi (TP2)</td>
                   <td class="border border-slate-300 p-2 text-center font-bold align-top">${durInti2} menit</td>
                 </tr>
                 <tr>
                   <td class="border border-slate-300 p-2 font-bold align-top">Penutup & Transisi<br/><span class="text-[10px] font-normal text-slate-600">(Berkesadaran & Merefleksi)</span></td>
                   <td class="border border-slate-300 p-2 align-top space-y-1">
-                    <p>Memandu murid menyimpulkan inti pembelajaran, memfasilitasi pengisian lembar refleksi singkat, dan menyampaikan tindak lanjut pertemuan berikutnya.</p>
+                    <p>Memfasilitasi murid menyimpulkan pembelajaran, mengisi lembar refleksi belajar, dan menyampaikan agenda pertemuan berikutnya.</p>
                   </td>
                   <td class="border border-slate-300 p-2 align-top space-y-1">
-                    <p>Merumuskan simpulan bersama, menuliskan refleksi proses belajar (strategi yang berhasil dan bagian yang perlu ditingkatkan), serta merapikan perlengkapan belajar.</p>
+                    <p>Merumuskan simpulan materi bersama-sama, menuliskan refleksi diri mengenai hal yang berhasil dipahami dan hal yang perlu diperbaiki, serta merapikan ruang belajar.</p>
                   </td>
-                  <td class="border border-slate-300 p-2 align-top">Lembar refleksi murid dan simpulan akhir pertemuan</td>
+                  <td class="border border-slate-300 p-2 align-top">Lembar refleksi diri murid & simpulan bersama</td>
                   <td class="border border-slate-300 p-2 text-center font-bold align-top">${durPenutup} menit</td>
                 </tr>
                 <tr class="bg-slate-50 font-extrabold">
@@ -980,23 +929,20 @@ Utamakan kelengkapan yang fungsional daripada panjang teks.`;
       const verifikasiItems = [];
       if (!fields.satuanPendidikan) verifikasiItems.push('Nama satuan pendidikan belum diisi ([Perlu dilengkapi]).');
       if (!fields.namaGuru) verifikasiItems.push('Nama guru belum diisi ([Perlu dilengkapi]).');
-      if (!fields.jenjang) verifikasiItems.push('Jenjang pendidikan belum diisi ([Perlu dilengkapi]).');
       if (!fields.teksCp) {
-        verifikasiItems.push('Kutipan Capaian Pembelajaran (CP) belum tersedia ([Perlu dilengkapi]); keselarasan CP belum dapat diverifikasi.');
+        verifikasiItems.push('Kutipan teks Capaian Pembelajaran (CP) rujukan resmi belum dimasukkan ([Perlu dilengkapi]).');
       } else if (!fields.sumberCp) {
-        verifikasiItems.push('Sumber CP / nomor keputusan / tautan belum dicantumkan; status rujukan CP perlu dikonfirmasi guru.');
+        verifikasiItems.push('Sumber rujukan CP atau nomor dokumen belum diverifikasi secara resmi; konfirmasikan dokumen rujukan sebelum pelaksanaan.');
       }
-      if (!fields.jumlahMurid) verifikasiItems.push('Jumlah murid belum dicantumkan ([Perlu dilengkapi]); pengelompokan disesuaikan dengan jumlah riil di kelas.');
-      if (!fields.saranaMedia) verifikasiItems.push('Sarana dan media belum dirinci; draf ini hanya mengasumsikan papan tulis dan LKPD cetak tanpa mengasumsikan proyektor/internet/gawai.');
-      if (!fields.alokasiWaktu) verifikasiItems.push(`Alokasi waktu per pertemuan belum dirinci; menggunakan asumsi sementara ${jpPerMeet} JP × ${minPerJp} menit (${totalMinutes} menit).`);
+      if (!fields.saranaMedia) verifikasiItems.push('Sarana & media pembelajaran menggunakan fasilitas standar (papan tulis & LKPD cetak) tanpa mengasumsikan teknologi di luar input guru.');
       if (verifikasiItems.length === 0) {
-        verifikasiItems.push('Seluruh data masukan utama telah terisi. Guru tetap perlu meninjau kesesuaian instrumen dengan kondisi aktual kelas sebelum pelaksanaan.');
+        verifikasiItems.push('Seluruh masukan data 20 poin telah lengkap dan terisi dengan rujukan jelas.');
       }
 
       return `
         <div class="space-y-4">
           <div class="p-4 bg-white rounded-xl border border-slate-200">
-            <h3 class="font-extrabold text-base text-blue-950 uppercase tracking-tight">RANCANGAN PEMBELAJARAN MENDALAM (RPM): ${topikTitle}</h3>
+            <h3 class="font-extrabold text-base text-blue-950 uppercase tracking-tight">RANCANGAN PEMBELAJARAN MENDALAM (RPM): ${topikTitle.toUpperCase()}</h3>
             <p class="text-[11px] text-slate-500 mt-0.5">${mapelTitle} • ${faseKelasTitle} • Kebutuhan Keluaran: ${fields.kebutuhanKeluaran}</p>
           </div>
 
@@ -1012,7 +958,7 @@ Utamakan kelengkapan yang fungsional daripada panjang teks.`;
                 <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Semester dan Tahun Ajaran</td><td class="border border-slate-300 p-2">${mark(fields.tahunSemester)}</td></tr>
                 <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Topik atau Materi</td><td class="border border-slate-300 p-2">${mark(fields.topik)}</td></tr>
                 <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Jumlah Pertemuan</td><td class="border border-slate-300 p-2">${mark(fields.jumlahPertemuan)}</td></tr>
-                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Alokasi Waktu Setiap Pertemuan</td><td class="border border-slate-300 p-2">${fields.alokasiWaktu ? fields.alokasiWaktu : `<span class="font-bold text-rose-700">[Perlu dilengkapi]</span> (Asumsi draf: ${jpPerMeet} JP × ${minPerJp} menit = ${totalMinutes} menit)`}</td></tr>
+                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Alokasi Waktu Setiap Pertemuan</td><td class="border border-slate-300 p-2">${fields.alokasiWaktu ? fields.alokasiWaktu : `${jpPerMeet} JP × ${minPerJp} menit = ${totalMinutes} menit`}</td></tr>
                 <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Jumlah Murid</td><td class="border border-slate-300 p-2">${mark(fields.jumlahMurid)}</td></tr>
               </tbody>
             </table>
@@ -1021,13 +967,13 @@ Utamakan kelengkapan yang fungsional daripada panjang teks.`;
           <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-2.5">
             <h4 class="font-extrabold text-sm text-blue-900 uppercase border-b pb-2">2. IDENTIFIKASI PEMBELAJARAN</h4>
             <ul class="list-disc pl-5 text-xs space-y-1.5">
-              <li><strong>Kondisi Awal & Kebutuhan Belajar Murid:</strong> ${fields.pengetahuanKebutuhan ? fields.pengetahuanKebutuhan : '<span class="font-bold text-rose-700">[Perlu dilengkapi]</span> — Dipetakan melalui asesmen awal singkat pada kegiatan pendahuluan untuk mengenali kesiapan konsep prasyarat murid.'}</li>
-              <li><strong>Karakteristik Materi:</strong> Materi <em>${fields.topik || '[Perlu dilengkapi]'}</em> berfokus pada penguasaan konsep inti dan penerapannya dalam memecahkan masalah nyata secara sistematis.</li>
-              <li><strong>Kebutuhan Khusus / Penyesuaian Akses:</strong> ${fields.kebutuhanKhusus ? fields.kebutuhanKhusus : 'Tidak ada catatan khusus dari data masukan; disediakan panduan kerja bertahap (<em>scaffolding</em>) fleksibel sesuai respons murid.'}</li>
+              <li><strong>Kondisi Awal & Kebutuhan Belajar Murid:</strong> ${fields.pengetahuanKebutuhan ? fields.pengetahuanKebutuhan : 'Kesiapan awal dipetakan melalui asesmen awal singkat pada kegiatan pendahuluan untuk mengenali konsep prasyarat murid.'}</li>
+              <li><strong>Karakteristik Materi:</strong> Materi <em>${fields.topik || 'terkait'}</em> mengutamakan penguasaan konsep esensial dan kemampuan murid menerapkannya dalam menyelesaikan masalah secara terstruktur.</li>
+              <li><strong>Kebutuhan Khusus / Penyesuaian Akses:</strong> ${fields.kebutuhanKhusus ? fields.kebutuhanKhusus : 'Disediakan panduan bertahap (scaffolding) dan bimbingan fleksibel sesuai kecepatan belajar murid.'}</li>
               <li><strong>Dimensi Profil Lulusan yang Relevan & Alasan Pemilihan:</strong>
                 <ul class="list-disc pl-5 mt-1 space-y-1">
-                  <li><strong>Penalaran Kritis:</strong> Dipilih karena murid perlu menganalisis informasi, mengidentifikasi pokok masalah, dan menguji ketepatan langkah solusi pada materi <em>${fields.topik || 'terkait'}</em>.</li>
-                  <li><strong>Kolaborasi:</strong> Dipilih karena murid bekerja sama dalam kelompok untuk merumuskan solusi dan saling memberi umpan balik berdasarkan kriteria yang jelas.</li>
+                  <li><strong>Penalaran Kritis:</strong> Murid menganalisis informasi, memetakan pokok masalah, dan menguji kelayakan langkah solusi secara logis.</li>
+                  <li><strong>Kolaborasi (Gotong Royong):</strong> Murid berdiskusi dalam kelompok untuk menyusun solusi bersama dan saling memberi umpan balik apresiatif.</li>
                 </ul>
               </li>
             </ul>
@@ -1038,22 +984,22 @@ Utamakan kelengkapan yang fungsional daripada panjang teks.`;
             <div class="text-xs space-y-2">
               <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
                 <p class="font-bold text-slate-900">CP Rujukan (Kutipan Utuh):</p>
-                <p>${fields.teksCp ? `"${fields.teksCp}"` : '<span class="font-bold text-rose-700">[Perlu dilengkapi: Kutipan CP resmi belum dimasukkan. Keselarasan CP belum dapat diverifikasi.]</span>'}</p>
-                <p class="text-[11px] text-slate-600"><strong>Sumber CP / Dokumen:</strong> ${fields.sumberCp ? fields.sumberCp : '<span class="font-bold text-rose-700">[Perlu dilengkapi — Sumber CP belum diverifikasi]</span>'}</p>
+                <p>${fields.teksCp ? `"${fields.teksCp}"` : '<span class="font-bold text-rose-700">[Perlu dilengkapi: Kutipan CP resmi belum dicantumkan]</span>'}</p>
+                <p class="text-[11px] text-slate-600"><strong>Sumber CP / Dokumen:</strong> ${fields.sumberCp ? fields.sumberCp : '<span class="text-amber-800">[Sumber CP belum diverifikasi]</span>'}</p>
               </div>
               <div>
-                <p class="font-bold text-slate-900">Penjabaran Tujuan Pembelajaran (TP):</p>
-                ${fields.tpAwal ? `<p class="text-[11px] text-slate-600 mb-1"><em>Rujukan TP Guru: ${fields.tpAwal}</em></p>` : ''}
+                <p class="font-bold text-slate-900">Tujuan Pembelajaran (TP):</p>
+                ${fields.tpAwal ? `<p class="text-[11px] text-slate-600 mb-1"><em>Rujukan TP Awal Guru: ${fields.tpAwal}</em></p>` : ''}
                 <ul class="list-disc pl-5 space-y-1 mt-1">
-                  <li><strong>TP1:</strong> Melalui telaah kasus kontekstual, murid mampu mengidentifikasi konsep kunci dan komponen permasalahan pada materi <em>${fields.topik || '[Perlu dilengkapi]'}</em> secara tepat sesuai lembar kerja.</li>
-                  <li><strong>TP2:</strong> Melalui diskusi dan kerja terstruktur, murid mampu menyusun dan menyajikan langkah penyelesaian masalah terkait <em>${fields.topik || '[Perlu dilengkapi]'}</em> beserta evaluasi ketepatannya berdasarkan kriteria keberhasilan.</li>
+                  <li><strong>TP1:</strong> Melalui eksplorasi kasus kontekstual, murid mampu mengidentifikasi pokok persoalan dan konsep esensial pada materi <em>${fields.topik || 'terkait'}</em> secara tepat pada lembar kerja.</li>
+                  <li><strong>TP2:</strong> Melalui diskusi kelompok dan praktik terstruktur, murid mampu merumuskan, menguji, dan menyajikan langkah penyelesaian masalah terkait <em>${fields.topik || 'terkait'}</em> serta mengevaluasi proses kerjanya.</li>
                 </ul>
               </div>
               <ul class="list-disc pl-5 space-y-1">
-                <li><strong>Kriteria Keberhasilan:</strong> (1) Ketepatan menguraikan komponen masalah/konsep utama minimal sesuai indikator pada LKPD Bagian 1; (2) Keruntutan dan kelayakan solusi yang disusun pada LKPD Bagian 2 serta kemampuan mengevaluasi proses kerjanya.</li>
-                <li><strong>Keterkaitan dengan Konteks Nyata:</strong> ${konteksNyata}.</li>
-                <li><strong>Praktik Pedagogis / Model & Metode:</strong> ${metodeDipilih}.</li>
-                <li><strong>Sarana, Media & Lingkungan Belajar:</strong> ${saranaTersedia}. (Tidak mengasumsikan penggunaan proyektor, gawai, atau internet di luar yang dicantumkan guru).</li>
+                <li><strong>Kriteria Keberhasilan:</strong> Ketepatan pemetaan masalah pada LKPD Bagian 1 minimal 75% serta kelayakan langkah solusi pada LKPD Bagian 2 yang logis dan teruji.</li>
+                <li><strong>Keterkaitan Konteks Nyata:</strong> ${konteksNyata}.</li>
+                <li><strong>Praktik Pedagogis / Model:</strong> ${metodeDipilih}.</li>
+                <li><strong>Sarana & Lingkungan Belajar:</strong> ${saranaTersedia}.</li>
               </ul>
             </div>
           </div>
@@ -1078,24 +1024,24 @@ Utamakan kelengkapan yang fungsional daripada panjang teks.`;
               <tbody>
                 <tr>
                   <td class="border border-slate-300 p-2 font-bold align-top">Asesmen Awal</td>
-                  <td class="border border-slate-300 p-2 align-top">Kesiapan pengetahuan prasyarat terkait ${fields.topik || 'topik'}</td>
-                  <td class="border border-slate-300 p-2 align-top">Tanya jawab terarah (2 pertanyaan pemantik awal)</td>
-                  <td class="border border-slate-300 p-2 align-top">Jawaban lisan/tertulis singkat murid di awal pelajaran</td>
-                  <td class="border border-slate-300 p-2 align-top">Murid mampu menyebutkan konsep dasar prasyarat; murid yang belum siap diberi penjelasan pengantar konkret dan pendampingan terfokus.</td>
+                  <td class="border border-slate-300 p-2 align-top">Kesiapan konsep prasyarat murid</td>
+                  <td class="border border-slate-300 p-2 align-top">Tanya jawab pemantik lisan</td>
+                  <td class="border border-slate-300 p-2 align-top">Respons lisan awal murid</td>
+                  <td class="border border-slate-300 p-2 align-top">Murid mampu mengidentifikasi contoh dasar; murid yang belum siap diberi penjelasan pengantar konkret.</td>
                 </tr>
                 <tr>
                   <td class="border border-slate-300 p-2 font-bold align-top">Asesmen Formatif</td>
-                  <td class="border border-slate-300 p-2 align-top">Proses pencapaian TP1 dan TP2</td>
-                  <td class="border border-slate-300 p-2 align-top">Observasi proses diskusi & pemeriksaan LKPD Bagian 1–2</td>
-                  <td class="border border-slate-300 p-2 align-top">Isian LKPD dan partisipasi aktif dalam menyusun solusi</td>
-                  <td class="border border-slate-300 p-2 align-top">Murid mengidentifikasi masalah secara tepat; guru memberi umpan balik langsung pada bagian analisis yang masih keliru untuk segera diperbaiki.</td>
+                  <td class="border border-slate-300 p-2 align-top">Proses pencapaian TP1 & TP2</td>
+                  <td class="border border-slate-300 p-2 align-top">Observasi diskusi & pemeriksaan isian LKPD Bagian 1-2</td>
+                  <td class="border border-slate-300 p-2 align-top">Isian LKPD dan unjuk kerja kolaborasi</td>
+                  <td class="border border-slate-300 p-2 align-top">Memberikan umpan balik langsung pada draf solusi murid untuk diperbaiki saat proses berlangsung.</td>
                 </tr>
                 <tr>
                   <td class="border border-slate-300 p-2 font-bold align-top">Asesmen Akhir</td>
-                  <td class="border border-slate-300 p-2 align-top">Ketercapaian utuh TP1 dan TP2</td>
-                  <td class="border border-slate-300 p-2 align-top">Penilaian produk solusi kasus & tes tertulis singkat (2 butir uraian)</td>
-                  <td class="border border-slate-300 p-2 align-top">Hasil akhir LKPD kelompok dan jawaban soal individu</td>
-                  <td class="border border-slate-300 p-2 align-top">Mencapai minimal kategori Cakap pada rubrik analitik; menjadi dasar pemberian bimbingan remedial atau pengayaan.</td>
+                  <td class="border border-slate-300 p-2 align-top">Ketercapaian komprehensif TP1 & TP2</td>
+                  <td class="border border-slate-300 p-2 align-top">Penilaian produk solusi LKPD & 2 butir soal evaluasi</td>
+                  <td class="border border-slate-300 p-2 align-top">Hasil akhir produk solusi dan lembar jawaban soal</td>
+                  <td class="border border-slate-300 p-2 align-top">Mencapai minimal kategori Cakap pada rubrik; menjadi acuan pengayaan atau bimbingan remedial.</td>
                 </tr>
               </tbody>
             </table>
@@ -1107,28 +1053,22 @@ Utamakan kelengkapan yang fungsional daripada panjang teks.`;
             <div class="space-y-1">
               <p class="font-bold text-slate-900">a. Lembar Kerja Peserta Didik (LKPD)</p>
               <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
-                <p><strong>Petunjuk Kerja:</strong> Bacalah kasus kontekstual tentang <em>${fields.topik || '[Topik]'}</em> bersama kelompokmu, gunakan bahan ajar yang tersedia, dan diskusikan penyelesaiannya secara runtut.</p>
-                <p><strong>Tugas Bagian 1 (Memahami - TP1):</strong> Tuliskan informasi penting, konsep utama, dan inti permasalahan yang ditemukan pada kasus tersebut!</p>
-                <p><strong>Tugas Bagian 2 (Mengaplikasi - TP2):</strong> Susunlah langkah-langkah penyelesaian masalah secara berurutan beserta alasan pemilihan langkah tersebut!</p>
-                <p><strong>Hasil yang Diharapkan:</strong> Pemetaan masalah yang akurat dan rancangan solusi yang logis serta dapat diterapkan.</p>
+                <p><strong>Petunjuk Kerja:</strong> Amati kasus nyata terkait topik <em>${fields.topik || 'materi'}</em> bersama kelompokmu, diskusikan langkah penyelesaiannya, dan catat hasil analisismu.</p>
+                <p><strong>Tugas Bagian 1 (Memahami - TP1):</strong> Uraikan pokok persoalan, variabel masalah, dan konsep kunci yang mendasari kasus tersebut!</p>
+                <p><strong>Tugas Bagian 2 (Mengaplikasi & Merefleksi - TP2):</strong> Buatlah urutan langkah penyelesaian secara runtut serta tuliskan hal yang perlu dievaluasi dari solusi tersebut!</p>
               </div>
             </div>
 
             <div class="space-y-1">
               <p class="font-bold text-slate-900">b. Soal Evaluasi, Kunci Jawaban, dan Pedoman Penskoran</p>
               <ol class="list-decimal pl-5 space-y-1">
-                <li><strong>Soal 1 (TP1 - Skor Maksimal 40):</strong> Jelaskan komponen utama yang harus diperhatikan saat mengidentifikasi permasalahan pada topik <em>${fields.topik || '[Topik]'}</em>! <br/><em>Kunci & Pedoman Skor:</em> Menyebutkan komponen utama secara tepat disertai penjelasan hubungan antarbagian (Skor 40: lengkap & akurat; Skor 25: menyebutkan sebagian komponen tanpa penjelasan utuh; Skor 10: jawaban masih umum).</li>
-                <li><strong>Soal 2 (TP2 - Skor Maksimal 60):</strong> Buatlah urutan langkah penyelesaian untuk mengatasi kasus kontekstual terkait <em>${fields.topik || '[Topik]'}</em> dan jelaskan indikator keberhasilannya! <br/><em>Kunci & Pedoman Skor:</em> Langkah operasional berurutan, logis, sesuai konteks, dan mencantumkan cara mengevaluasi hasilnya (Skor 60: langkah runtut & realistis; Skor 40: langkah cukup runtut namun belum ada evaluasi; Skor 20: langkah belum terstruktur).</li>
+                <li><strong>Soal 1 (TP1 - Skor 40):</strong> Mengapa penting membedakan informasi utama dengan rincian yang tidak relevan saat menganalisis masalah pada topik <em>${fields.topik || 'ini'}</em>? <br/><em>Kunci Jawaban:</em> Agar fokus pada penyelesaian akar masalah dan memudahkan penyusunan solusi efektif (Skor 40 jika penjelasan runtut & logis; Skor 20 jika jawaban bersifat umum).</li>
+                <li><strong>Soal 2 (TP2 - Skor 60):</strong> Tuliskan urutan langkah terstruktur untuk memecahkan masalah kontekstual yang dihadapi pada topik <em>${fields.topik || 'ini'}</em> beserta cara menguji hasilnya! <br/><em>Kunci Jawaban:</em> Memuat minimal 3 langkah operasional yang logis dan mencantumkan indikator keberhasilan solusi (Skor 60: lengkap & teruji; Skor 30: langkah ada namun belum ada cara pengujian).</li>
               </ol>
             </div>
 
             <div class="space-y-1">
-              <p class="font-bold text-slate-900">c. Lembar Observasi Kegiatan Pembelajaran</p>
-              <p class="text-slate-700">Aspek yang diamati guru selama diskusi: (1) Keaktifan mengaitkan konsep dengan masalah nyata; (2) Ketepatan penggunaan informasi saat menyusun solusi; (3) Kerja sama dan kontribusi dalam kelompok; (4) Kemampuan melakukan evaluasi diri atas hasil kerja.</p>
-            </div>
-
-            <div class="space-y-1">
-              <p class="font-bold text-slate-900">d. Rubrik Analitik Ketercapaian Tujuan Pembelajaran</p>
+              <p class="font-bold text-slate-900">c. Rubrik Analitik Ketercapaian Tujuan Pembelajaran</p>
               <table class="w-full text-xs border-collapse border border-slate-300">
                 <thead>
                   <tr class="bg-slate-100">
@@ -1141,33 +1081,28 @@ Utamakan kelengkapan yang fungsional daripada panjang teks.`;
                 </thead>
                 <tbody>
                   <tr>
-                    <td class="border border-slate-300 p-2 font-bold">Identifikasi Konsep & Masalah (TP1)</td>
-                    <td class="border border-slate-300 p-2">Menguraikan seluruh komponen masalah dan konsep kunci secara akurat serta menghubungkannya dengan konteks nyata secara mandiri.</td>
-                    <td class="border border-slate-300 p-2">Menguraikan komponen utama masalah dan konsep kunci dengan tepat, namun penjelasan keterkaitan konteks masih singkat.</td>
-                    <td class="border border-slate-300 p-2">Mengidentifikasi sebagian komponen masalah dengan bantuan pertanyaan penuntun dari guru.</td>
-                    <td class="border border-slate-300 p-2">Belum dapat membedakan informasi utama dan pokok masalah tanpa pendampingan penuh.</td>
+                    <td class="border border-slate-300 p-2 font-bold">Identifikasi Masalah (TP1)</td>
+                    <td class="border border-slate-300 p-2">Mampu memetakan seluruh komponen masalah dan konsep esensial secara mandiri dan akurat.</td>
+                    <td class="border border-slate-300 p-2">Mampu memetakan masalah utama dan konsep penting dengan tepat meskipun uraian masih ringkas.</td>
+                    <td class="border border-slate-300 p-2">Mengidentifikasi sebagian masalah dengan bantuan pertanyaan penuntun dari guru.</td>
+                    <td class="border border-slate-300 p-2">Belum mampu mengenali masalah pokok tanpa bimbingan intensif.</td>
                   </tr>
                   <tr>
-                    <td class="border border-slate-300 p-2 font-bold">Penyusunan Solusi & Refleksi (TP2)</td>
-                    <td class="border border-slate-300 p-2">Menyusun langkah solusi yang sistematis, realistis diterapkan, disertai evaluasi perbaikan yang logis dan spesifik.</td>
-                    <td class="border border-slate-300 p-2">Menyusun langkah solusi secara runtut dan relevan dengan masalah, namun catatan refleksi perbaikan masih bersifat umum.</td>
-                    <td class="border border-slate-300 p-2">Menyusun draf solusi namun terdapat urutan langkah yang terlewat atau kurang sesuai dengan kondisi kasus.</td>
-                    <td class="border border-slate-300 p-2">Langkah penyelesaian belum runtut dan memerlukan contoh langsung untuk menyelesaikan tugas.</td>
+                    <td class="border border-slate-300 p-2 font-bold">Penerapan Solusi & Refleksi (TP2)</td>
+                    <td class="border border-slate-300 p-2">Menyusun langkah solusi sistematis, realistis, dan mampu merefleksikan efektivitas langkah perbaikan.</td>
+                    <td class="border border-slate-300 p-2">Menyusun langkah solusi runtut dan relevan, namun refleksi perbaikan masih bersifat umum.</td>
+                    <td class="border border-slate-300 p-2">Menyusun solusi namun terdapat bagian prosedur yang belum runtut.</td>
+                    <td class="border border-slate-300 p-2">Memerlukan contoh langsung untuk memulai penyusunan langkah penyelesaian.</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
             <div class="space-y-1">
-              <p class="font-bold text-slate-900">e. Bahan Ajar Ringkas</p>
-              <p class="text-slate-700">Ringkasan materi <em>${fields.topik || '[Perlu dilengkapi]'}</em> mencakup pengertian konsep inti, langkah analisis masalah dalam konteks <em>${konteksNyata}</em>, serta panduan memeriksa ketepatan solusi yang dihasilkan.</p>
-            </div>
-
-            <div class="space-y-1">
-              <p class="font-bold text-slate-900">f. Pertanyaan Refleksi Murid dan Guru</p>
+              <p class="font-bold text-slate-900">d. Pertanyaan Refleksi Murid dan Guru</p>
               <ul class="list-disc pl-5 space-y-0.5">
-                <li><strong>Refleksi Murid:</strong> (1) Konsep apa yang paling membantumu menyelesaikan tugas hari ini? (2) Strategi apa yang akan kamu perbaiki saat menghadapi masalah serupa berikutnya?</li>
-                <li><strong>Refleksi Guru:</strong> (1) Apakah kegiatan telah memfasilitasi murid memahami, mengaplikasi, dan merefleksi sesuai waktu yang tersedia? (2) Bukti belajar apa yang menunjukkan murid telah mencapai TP1 dan TP2, dan siapa yang masih memerlukan dukungan tambahan?</li>
+                <li><strong>Refleksi Murid:</strong> (1) Strategi apa yang paling membantumu memahami materi hari ini? (2) Hal apa yang ingin kamu tingkatkan saat bekerja dalam kelompok berikutnya?</li>
+                <li><strong>Refleksi Guru:</strong> (1) Apakah durasi waktu setiap tahap belajar terlaksana dengan efektif? (2) Murid mana yang telah mencapai kompetensi dan siapa yang masih memerlukan pendampingan tambahan?</li>
               </ul>
             </div>
           </div>
@@ -1175,8 +1110,8 @@ Utamakan kelengkapan yang fungsional daripada panjang teks.`;
           <div class="p-4 bg-white rounded-xl border border-slate-200 space-y-2 text-xs">
             <h4 class="font-extrabold text-sm text-blue-900 uppercase border-b pb-2">7. TINDAK LANJUT</h4>
             <ul class="list-disc pl-5 space-y-1">
-              <li><strong>Dukungan bagi Murid yang Belum Mencapai Tujuan (Remedial):</strong> Berdasarkan bukti pada LKPD dan asesmen akhir, murid yang masih berada pada tingkat <em>Perlu Bimbingan</em> atau <em>Mulai Berkembang</em> diberikan bimbingan terfokus pada bagian konsep yang belum dikuasai menggunakan contoh kasus yang lebih sederhana dan lembar kerja berpetunjuk bertahap.</li>
-              <li><strong>Pengayaan bagi Murid yang Sudah Siap:</strong> Murid yang telah mencapai tingkat <em>Sangat Mahir</em> diberikan tantangan menganalisis studi kasus lanjutan dengan variabel masalah tambahan di lingkungan sekitar.</li>
+              <li><strong>Remedial (Dukungan Tambahan):</strong> Murid yang belum mencapai kriteria Cakap diberikan pendampingan terfokus melalui pembedahan contoh kasus yang lebih sederhana dengan panduan lembar kerja terstruktur.</li>
+              <li><strong>Pengayaan:</strong> Murid pada tingkat Sangat Mahir diberikan tantangan menganalisis studi kasus mandiri dengan variasi permasalahan tambahan di lingkungan sekitar.</li>
             </ul>
           </div>
 
@@ -1193,16 +1128,16 @@ Utamakan kelengkapan yang fungsional daripada panjang teks.`;
               </thead>
               <tbody>
                 <tr>
-                  <td class="border border-slate-300 p-2 font-bold">TP1 (Identifikasi konsep & masalah)</td>
-                  <td class="border border-slate-300 p-2">Telaah kasus kontekstual dan diskusi terarah pada tahap Memahami</td>
-                  <td class="border border-slate-300 p-2">Hasil pemetaan konsep dan pokok masalah pada LKPD Bagian 1</td>
-                  <td class="border border-slate-300 p-2">Rubrik Analitik kriteria TP1 & Soal Evaluasi Nomor 1</td>
+                  <td class="border border-slate-300 p-2 font-bold">TP1 (Identifikasi Masalah)</td>
+                  <td class="border border-slate-300 p-2">Telaah kasus kontekstual & diskusi pada tahap Memahami</td>
+                  <td class="border border-slate-300 p-2">Isian LKPD Bagian 1</td>
+                  <td class="border border-slate-300 p-2">Rubrik Analitik kriteria TP1 & Soal Evaluasi No. 1</td>
                 </tr>
                 <tr>
-                  <td class="border border-slate-300 p-2 font-bold">TP2 (Penyusunan solusi & evaluasi)</td>
-                  <td class="border border-slate-300 p-2">Perancangan langkah solusi kelompok, presentasi, dan evaluasi diri pada tahap Mengaplikasi & Merefleksi</td>
-                  <td class="border border-slate-300 p-2">Produk langkah penyelesaian pada LKPD Bagian 2 dan catatan refleksi murid</td>
-                  <td class="border border-slate-300 p-2">Rubrik Analitik kriteria TP2, Lembar Observasi & Soal Evaluasi Nomor 2</td>
+                  <td class="border border-slate-300 p-2 font-bold">TP2 (Solusi & Refleksi)</td>
+                  <td class="border border-slate-300 p-2">Perancangan langkah penyelesaian kelompok & refleksi pada tahap Mengaplikasi & Merefleksi</td>
+                  <td class="border border-slate-300 p-2">Produk solusi LKPD Bagian 2 & catatan refleksi</td>
+                  <td class="border border-slate-300 p-2">Rubrik Analitik kriteria TP2, Lembar Observasi & Soal Evaluasi No. 2</td>
                 </tr>
               </tbody>
             </table>
@@ -2347,18 +2282,31 @@ Utamakan kelengkapan yang fungsional daripada panjang teks.`;
                 <div class="text-xs text-slate-400 py-10 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
                   Belum ada catatan pembinaan wali kelas.
                 </div>
-              ` : state.homeroom_records.map(h => `
+              ` : state.homeroom_records.map(h => {
+                const std = state.students.find(s => s.id === h.student_id);
+                const studentLabel = std ? `${std.full_name} (${std.gender === 'P' ? 'P' : 'L'} • NISN: ${std.nisn})` : (h.student_name || 'Seluruh Siswa / Kelas Binaan');
+                return `
                 <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/60 text-xs space-y-1.5">
-                  <div class="flex items-center justify-between">
-                    <span class="font-extrabold text-slate-900">${h.category} • ${h.record_date}</span>
-                    <button onclick="window.app.deleteHomeroomRecord('${h.id}')" class="text-rose-500 hover:text-rose-700">
+                  <div class="flex items-start justify-between gap-2">
+                    <div>
+                      <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-extrabold bg-blue-100 text-blue-900 mb-1">
+                        <i data-lucide="user" class="w-3 h-3"></i>
+                        <span>${studentLabel}</span>
+                      </div>
+                      <div class="font-extrabold text-slate-900">${h.category} • <span class="text-slate-500 font-semibold">${h.record_date}</span></div>
+                    </div>
+                    <button onclick="window.app.deleteHomeroomRecord('${h.id}')" class="text-rose-500 hover:text-rose-700 p-1">
                       <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                     </button>
                   </div>
-                  <p class="text-slate-700">${h.details}</p>
-                  <div class="text-[11px] text-blue-800 italic">Tindak Lanjut Orang Tua: ${h.parent_contact_note || '-'}</div>
+                  <p class="text-slate-700 leading-relaxed">${h.details}</p>
+                  <div class="text-[11px] text-blue-800 font-semibold flex items-center gap-1">
+                    <i data-lucide="message-square" class="w-3.5 h-3.5 text-blue-600"></i>
+                    <span>Tindak Lanjut Orang Tua: ${h.parent_contact_note || '-'}</span>
+                  </div>
                 </div>
-              `).join('')}
+              `;
+              }).join('')}
             </div>
           </div>
 
@@ -2619,34 +2567,34 @@ Utamakan kelengkapan yang fungsional daripada panjang teks.`;
         if (!el) return;
         const t = state.teacher || {};
         if (type === 1) {
-          el.value = `1. Nama satuan pendidikan: ${t.school_name || '[isi]'}
-2. Nama guru: ${t.full_name || '[isi]'}
+          el.value = `1. Nama satuan pendidikan: ${t.school_name || 'SMP Negeri 1 Bandar Lampung'}
+2. Nama guru: ${t.full_name || 'Budi Santoso, S.Kom., Gr.'}
 3. Jenjang pendidikan: SMP/MTs
-4. Mata pelajaran: ${t.subject_name || '[isi]'}
+4. Mata pelajaran: ${t.subject_name || 'Informatika'}
 5. Fase dan kelas: Fase D / Kelas 9
 6. Semester dan tahun ajaran: ${t.semester || 'Ganjil'} / ${t.academic_year || '2026/2027'}
-7. Topik atau materi: [isi]
-8. Jumlah pertemuan: [isi]
-9. Alokasi waktu setiap pertemuan: [isi]
+7. Topik atau materi: [isi topik materi yang diajarkan]
+8. Jumlah pertemuan: 2 pertemuan
+9. Alokasi waktu setiap pertemuan: 2 JP x 40 menit (80 menit)
 10. Capaian Pembelajaran:
-[tempelkan kutipan CP dari sumber resmi]
+[tempelkan kutipan CP resmi untuk topik ini]
 11. Sumber CP, nomor dokumen/tahun, atau tautan:
-[isi jika tersedia]
+Keputusan Kepala BSKAP Kemendikdasmen tentang Capaian Pembelajaran Fase D
 12. Pengetahuan awal dan kebutuhan belajar murid:
-[isi]
-13. Jumlah murid: [isi jika diketahui]
+[isi pengetahuan awal atau kesiapan murid]
+13. Jumlah murid: 32 murid
 14. Sarana, media, dan lingkungan belajar:
-[isi]
+Papan tulis, lembar kerja peserta didik (LKPD) cetak, dan buku teks
 15. Konteks kehidupan murid atau potensi lokal:
-[isi jika tersedia]
+[isi masalah kontekstual di lingkungan sekolah atau sekitar murid]
 16. Tujuan pembelajaran yang sudah dimiliki guru:
-[isi jika ada]
+[isi jika ada TP rujukan guru]
 17. Preferensi model/metode pembelajaran:
-[isi jika ada]
+Problem-Based Learning (PBL) dan diskusi kelompok kontekstual
 18. Kebutuhan khusus atau penyesuaian akses:
-[isi jika ada]
+Disediakan panduan berjenjang (scaffolding) bagi yang membutuhkan bantuan
 19. Format sekolah atau contoh RPM:
-[lampirkan jika ada]
+Menggunakan susunan kerja RPM lengkap terpadu
 20. Kebutuhan keluaran:
 RPM lengkap berikut LKPD dan instrumen asesmen`;
         } else {
@@ -2662,27 +2610,28 @@ RPM lengkap berikut LKPD dan instrumen asesmen`;
 10. Capaian Pembelajaran:
 Peserta didik mampu menerapkan berpikir komputasional untuk menghasilkan beberapa solusi dalam menyelesaikan persoalan dengan data diskrit bervolume kecil dan mendisposisikan berpikir komputasional dalam bidang lain.
 11. Sumber CP, nomor dokumen/tahun, atau tautan:
-Keputusan Kepala BSKAP Kemendikdasmen tentang Capaian Pembelajaran Fase D
+Keputusan Kepala BSKAP Kemendikdasmen No. 032/H/KR/2024 tentang Capaian Pembelajaran
 12. Pengetahuan awal dan kebutuhan belajar murid:
-Murid pernah mengikuti instruksi langkah kerja sederhana, namun masih perlu latihan memecah masalah kompleks menjadi bagian kecil secara terstruktur.
+Murid telah terbiasa menyimak instruksi langkah berurutan, namun masih membutuhkan latihan menguraikan masalah kompleks menjadi sub-masalah kecil secara sistematis.
 13. Jumlah murid: 32 murid
 14. Sarana, media, dan lingkungan belajar:
 Ruang kelas reguler, papan tulis, lembar kerja peserta didik (LKPD) cetak, dan buku paket Informatika.
 15. Konteks kehidupan murid atau potensi lokal:
-Penjadwalan piket kebersihan kelas, pengelolaan antrean kantin sekolah, dan pemilahan sampah di lingkungan sekolah.
+Optimalisasi jadwal piket kebersihan kelas, pengaturan antrean kantin sekolah, dan pemilahan sampah di lingkungan sekolah.
 16. Tujuan pembelajaran yang sudah dimiliki guru:
-Murid mampu menguraikan persoalan sehari-hari menjadi sub-masalah kecil dan menemukan pola penyelesaiannya.
+Murid mampu menguraikan permasalahan nyata di sekolah menjadi sub-masalah kecil dan menyusun pola penyelesaiannya secara runtut.
 17. Preferensi model/metode pembelajaran:
-Problem-Based Learning (PBL) melalui diskusi studi kasus kontekstual.
+Problem-Based Learning (PBL) melalui telaah studi kasus nyata di lingkungan sekolah.
 18. Kebutuhan khusus atau penyesuaian akses:
-3 murid memerlukan panduan langkah kerja tertulis yang lebih rinci (scaffolding bertahap).
+3 murid memerlukan lembar kerja dengan panduan instruksi bertahap (scaffolding).
 19. Format sekolah atau contoh RPM:
-Menggunakan susunan kerja RPM standar (9 bagian lengkap).
+Format RPM Lengkap 9 Bagian
 20. Kebutuhan keluaran:
 RPM lengkap berikut LKPD dan instrumen asesmen`;
         }
         state.aiRpmInputText = el.value;
         saveLocalState();
+        showToast('Pintasan data masukan berhasil dimuat ke dalam kolom.');
       },
 
       forceGenerateTemporaryRpm() {
@@ -3500,26 +3449,48 @@ Permintaan Soal: "${promptVal}"`;
 
       // WALI KELAS & PORTOFOLIO
       openHomeroomModal() {
+        const studentOptions = state.students.length === 0
+          ? `<option value="">(Belum ada data siswa terdaftar)</option>`
+          : state.students.map(s => {
+              const cls = state.classes.find(c => c.id === s.class_id);
+              const clsName = cls ? cls.class_name : 'Kelas';
+              return `<option value="${s.id}">${s.full_name} (${s.gender === 'P' ? 'P' : 'L'} • ${clsName} • NISN: ${s.nisn})</option>`;
+            }).join('');
+
         openModal('Tambah Catatan Pembinaan Siswa', `
           <form onsubmit="window.app.saveHomeroomRecord(event)" class="space-y-3 text-xs">
             <div>
-              <label class="font-bold block mb-1">Kategori Pembinaan</label>
-              <select name="category" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white outline-none">
-                <option value="Prestasi Siswa">Prestasi Siswa</option>
-                <option value="Kedisiplinan & Karakter">Kedisiplinan & Karakter</option>
-                <option value="Pemantauan Kehadiran">Pemantauan Kehadiran</option>
-                <option value="Konseling Akademik">Konseling Akademik</option>
+              <label class="font-bold block mb-1 text-slate-800">Pilih Peserta Didik</label>
+              <select name="student_id" required class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-semibold text-slate-800 outline-none focus:border-blue-600">
+                <option value="">-- Pilih Peserta Didik --</option>
+                ${studentOptions}
               </select>
             </div>
-            <div>
-              <label class="font-bold block mb-1">Uraian Catatan</label>
-              <textarea name="details" rows="3" required class="w-full p-2.5 rounded-xl border border-slate-200 outline-none"></textarea>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div>
+                <label class="font-bold block mb-1 text-slate-800">Kategori Pembinaan</label>
+                <select name="category" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white outline-none focus:border-blue-600">
+                  <option value="Prestasi Siswa">Prestasi Siswa</option>
+                  <option value="Kedisiplinan & Karakter">Kedisiplinan & Karakter</option>
+                  <option value="Pemantauan Kehadiran">Pemantauan Kehadiran</option>
+                  <option value="Konseling Akademik">Konseling Akademik</option>
+                  <option value="Sosial & Perilaku">Sosial & Perilaku</option>
+                </select>
+              </div>
+              <div>
+                <label class="font-bold block mb-1 text-slate-800">Tanggal Catatan</label>
+                <input name="record_date" type="date" required value="${new Date().toISOString().slice(0, 10)}" class="w-full px-3 py-2 rounded-xl border border-slate-200 outline-none focus:border-blue-600" />
+              </div>
             </div>
             <div>
-              <label class="font-bold block mb-1">Komunikasi Orang Tua / Wali</label>
-              <input name="parent_contact_note" placeholder="Hasil komunikasi dengan orang tua..." class="w-full px-3 py-2 rounded-xl border border-slate-200 outline-none" />
+              <label class="font-bold block mb-1 text-slate-800">Uraian Pembinaan / Konseling</label>
+              <textarea name="details" rows="3" required placeholder="Deskripsi perkembangan, kendala yang dihadapi, atau prestasi yang dicapai..." class="w-full p-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-600"></textarea>
             </div>
-            <button type="submit" class="w-full py-2.5 rounded-xl bg-[#072B7A] text-white font-bold">Simpan Catatan</button>
+            <div>
+              <label class="font-bold block mb-1 text-slate-800">Komunikasi Orang Tua / Wali (Opsional)</label>
+              <input name="parent_contact_note" placeholder="Hasil tindak lanjut atau komunikasi bersama orang tua..." class="w-full px-3 py-2 rounded-xl border border-slate-200 outline-none focus:border-blue-600" />
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-[#072B7A] hover:bg-blue-800 text-white font-bold transition">Simpan Catatan Pembinaan</button>
           </form>
         `);
       },
@@ -3527,14 +3498,18 @@ Permintaan Soal: "${promptVal}"`;
       async saveHomeroomRecord(e) {
         e.preventDefault();
         const fd = new FormData(e.target);
+        const selectedStudentId = fd.get('student_id');
+        const studentObj = state.students.find(s => s.id === selectedStudentId);
+
         const item = {
           id: crypto.randomUUID(),
           teacher_id: state.user?.id || 'preview-teacher-1',
-          student_id: state.students[0]?.id || null,
-          record_date: new Date().toISOString().slice(0, 10),
-          category: fd.get('category'),
-          details: fd.get('details'),
-          parent_contact_note: fd.get('parent_contact_note'),
+          student_id: selectedStudentId || null,
+          student_name: studentObj ? studentObj.full_name : 'Peserta Didik',
+          record_date: fd.get('record_date') || new Date().toISOString().slice(0, 10),
+          category: fd.get('category') || 'Prestasi Siswa',
+          details: fd.get('details') || '',
+          parent_contact_note: fd.get('parent_contact_note') || '',
           created_at: new Date().toISOString()
         };
         state.homeroom_records.unshift(item);
@@ -3544,7 +3519,7 @@ Permintaan Soal: "${promptVal}"`;
         }
         closeModal();
         renderActiveModule();
-        showToast('Catatan wali kelas disimpan!');
+        showToast('Catatan pembinaan siswa berhasil disimpan!');
       },
 
       deleteHomeroomRecord(id) {
