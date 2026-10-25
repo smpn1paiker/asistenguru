@@ -156,7 +156,7 @@
         </div>
 
         <p class="text-xs text-slate-500 mb-6 leading-relaxed">
-          Ruang kerja pintar untuk persiapan mengajar berbasis CP resmi, jurnal kelas, bank asesmen, dan olah nilai terintegrasi.
+          Ruang kerja pintar untuk persiapan mengajar berbasis CP resmi, pembuatan RPM berstandar ganda (AI Generator & AI Pemeriksa terpisah), serta administrasi kelas terintegrasi.
         </p>
 
         <form id="login-form" class="space-y-4">
@@ -220,6 +220,12 @@
         </div>
 
         <div class="flex items-center gap-2.5">
+          <button type="button" onclick="window.app.openApiKeyModal()" title="Konfigurasi API AI Key"
+            class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-semibold text-blue-100 transition">
+            <i data-lucide="key" class="w-3.5 h-3.5 text-amber-300"></i>
+            <span>API AI</span>
+          </button>
+
           <div class="flex items-center gap-2.5 bg-white/10 border border-white/15 rounded-full py-1 pl-1.5 pr-4">
             <div id="header-user-initials" class="w-8 h-8 rounded-full bg-[#041745] border border-blue-400/40 flex items-center justify-center font-bold text-xs text-amber-300">
               BS
@@ -247,11 +253,11 @@
           <div class="mt-4 pt-3 border-t border-white/10 px-2">
             <div class="rounded-2xl bg-white/5 border border-white/10 p-3 text-xs text-blue-100">
               <div class="flex items-center justify-between mb-1">
-                <span class="font-bold text-amber-300 text-[11px]">Ruang Kerja Pribadi</span>
-                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-amber-300"></i>
+                <span class="font-bold text-amber-300 text-[11px]">Audit Mandiri RPM</span>
+                <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-amber-300"></i>
               </div>
               <p class="text-[11px] text-blue-200/90 leading-relaxed">
-                Aplikasi manajemen persiapan ajar, kelas, asesmen, dan nilai khusus untuk guru.
+                Dilengkapi pemeriksaan AI terpisah dan validasi deterministik kode untuk menjamin mutu dan keaslian CP.
               </p>
             </div>
           </div>
@@ -270,7 +276,7 @@
           <strong id="footer-school-label" class="text-white tracking-wide uppercase">ASGURU TERPADU</strong>
         </div>
         <div>
-          <span class="font-semibold text-white">Portal Asisten Kerja Guru</span> • <span class="text-amber-300">Berbagi • Berinovasi • Berdampak</span>
+          <span class="font-semibold text-white">Portal Asisten Kerja Guru</span> • <span class="text-amber-300">Pemeriksaan RPM Independen</span>
         </div>
         <div class="text-right text-blue-200">
           © 2026 AsGURU • <span id="footer-ta-label">TA 2026/2027</span>
@@ -331,7 +337,7 @@
     const NAV_ITEMS = [
       { id: 'dashboard', label: 'Dashboard', mobileLabel: 'Beranda', icon: 'home', subtitle: 'Jadwal hari ini, pengingat & akses cepat' },
       { id: 'persiapan', label: 'Persiapan Ajar', mobileLabel: 'Persiapan', icon: 'calendar-range', subtitle: 'Prota, Promes, CP, TP, ATP & Modul Ajar / RPP' },
-      { id: 'rpm_ai', label: 'Asisten AI Pembuat RPM', mobileLabel: 'RPM AI', icon: 'sparkles', subtitle: 'Penyusunan Rencana Pembelajaran Mendalam (RPM) bertahap' },
+      { id: 'rpm_ai', label: 'Asisten AI Pembuat RPM', mobileLabel: 'RPM AI', icon: 'sparkles', subtitle: 'Penyusunan Rencana Pembelajaran Mendalam & Pemeriksaan Berlapis' },
       { id: 'kelas', label: 'Kelas & Jurnal', mobileLabel: 'Kelas', icon: 'users', subtitle: 'Presensi kelas, jurnal mengajar & aktivitas' },
       { id: 'asesmen', label: 'Asesmen & Soal', mobileLabel: 'Asesmen', icon: 'file-check-2', subtitle: 'Kisi-kisi, bank soal PG/Uraian & rubrik' },
       { id: 'nilai', label: 'Nilai & Remedial', mobileLabel: 'Nilai', icon: 'bar-chart-3', subtitle: 'Olah nilai otomatis, KKTP & remedial' },
@@ -340,6 +346,7 @@
     ];
 
     const STORAGE_KEY = 'ASGURU_DATA_STORAGE_V3';
+    const GEMINI_API_KEY_LOCAL = 'ASGURU_GEMINI_KEY';
 
     function parseAndValidateSourceUrl(rawUrl) {
       const trimmed = String(rawUrl || '').trim();
@@ -358,7 +365,7 @@
           message: `Domain sumber: ${parsed.hostname}`
         };
       } catch (err) {
-        return { valid: false, url: trimmed, domain: '', message: 'Format URL tidak valid (gunakan http:// atau https://)' };
+        return { valid: false, url: trimmed, domain: '', message: 'Format URL tidak valid (harus http:// atau https://)' };
       }
     }
 
@@ -412,7 +419,11 @@
           ai_developed_tp: '',
           learning_strategy: '',
           special_notes: ''
-        }
+        },
+        generated_rpm: null,
+        review_results: null,
+        pending_repaired_rpm: null,
+        pending_diff_summary: null
       };
     }
 
@@ -424,7 +435,11 @@
       rpmActiveStep: 1,
       rpmCurrentForm: createEmptyRpmForm(),
       rpm_drafts: [],
+      rpm_versions: [],
       cp_catalog: [],
+      isGeneratingRpm: false,
+      isReviewingRpm: false,
+      isRepairingRpm: false,
       teacher: {
         id: 'preview-teacher-1',
         full_name: 'Budi Santoso, S.Kom., Gr.',
@@ -436,7 +451,8 @@
         principal_nip: '19690810 199412 1 002',
         academic_year: '2026/2027',
         semester: 'Ganjil',
-        is_catalog_admin: false
+        is_catalog_admin: false,
+        gemini_api_key: ''
       },
       classes: [
         { id: 'cls-1', class_name: 'Kelas 9A', grade_level: 9, schedule_day: 'Sabtu', schedule_time: '07:30 - 09:00', room: 'Lab Komputer 1' }
@@ -474,7 +490,7 @@
         el.style.opacity = '0';
         el.style.transform = 'translateY(-8px)';
         setTimeout(() => el.remove(), 250);
-      }, 3400);
+      }, 3600);
     }
 
     function askConfirm(title, message, onConfirm) {
@@ -510,6 +526,10 @@
       document.getElementById('modal-overlay').classList.add('hidden');
     }
 
+    function getGeminiApiKey() {
+      return (state.teacher?.gemini_api_key || localStorage.getItem(GEMINI_API_KEY_LOCAL) || '').trim();
+    }
+
     function loadLocalState() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -519,6 +539,7 @@
           if (!state.rpmCurrentForm) state.rpmCurrentForm = createEmptyRpmForm();
           if (!Array.isArray(state.rpm_drafts)) state.rpm_drafts = [];
           if (!Array.isArray(state.cp_catalog)) state.cp_catalog = [];
+          if (!Array.isArray(state.rpm_versions)) state.rpm_versions = [];
         }
       } catch (err) {}
     }
@@ -545,7 +566,8 @@
           { data: homeroomData },
           { data: portfolioData },
           { data: rpmDraftsData, error: rpmErr },
-          { data: cpCatalogData, error: cpCatalogErr }
+          { data: cpCatalogData, error: cpCatalogErr },
+          { data: versionsData, error: vErr }
         ] = await Promise.all([
           supabase.from('teachers').select('*').eq('id', uid).maybeSingle(),
           supabase.from('classes').select('*').eq('teacher_id', uid).order('created_at', { ascending: true }),
@@ -558,10 +580,16 @@
           supabase.from('homeroom_records').select('*').eq('teacher_id', uid).order('record_date', { ascending: false }),
           supabase.from('teacher_portfolios').select('*').eq('teacher_id', uid).order('date_achieved', { ascending: false }),
           supabase.from('rpm_drafts').select('*').eq('teacher_id', uid).order('updated_at', { ascending: false }),
-          supabase.from('cp_catalog').select('*').order('created_at', { ascending: false })
+          supabase.from('cp_catalog').select('*').order('created_at', { ascending: false }),
+          supabase.from('rpm_versions').select('*').eq('teacher_id', uid).order('created_at', { ascending: false })
         ]);
 
-        if (teacherData) state.teacher = teacherData;
+        if (teacherData) {
+          state.teacher = teacherData;
+          if (teacherData.gemini_api_key) {
+            localStorage.setItem(GEMINI_API_KEY_LOCAL, teacherData.gemini_api_key);
+          }
+        }
         state.classes = classesData || [];
         state.students = studentsData || [];
         state.curriculum_plans = plansData || [];
@@ -571,6 +599,7 @@
         state.grades = gradesData || [];
         state.homeroom_records = homeroomData || [];
         state.teacher_portfolios = portfolioData || [];
+        state.rpm_versions = versionsData || [];
 
         if (!rpmErr && rpmDraftsData) {
           state.rpm_drafts = rpmDraftsData;
@@ -658,6 +687,242 @@
       renderActiveModule();
     }
 
+    function calculateRpmTime(jp, minutesPerJp, meetings) {
+      const jpVal = parseFloat(jp);
+      const minVal = parseFloat(minutesPerJp);
+      const meetVal = parseInt(meetings, 10);
+
+      if (isNaN(jpVal) || jpVal <= 0 || isNaN(minVal) || minVal <= 0) {
+        return {
+          valid: false,
+          totalMinutes: 0,
+          expectedPerMeetingMinutes: 0,
+          hoursText: 'Belum dapat dihitung (isi Alokasi JP dan Menit per JP)',
+          perMeetingText: '-'
+        };
+      }
+
+      const totalMinutes = jpVal * minVal;
+      const hours = Math.floor(totalMinutes / 60);
+      const remMinutes = Math.round(totalMinutes % 60);
+      const hoursText = `${totalMinutes} Menit (${hours > 0 ? hours + ' Jam ' : ''}${remMinutes > 0 ? remMinutes + ' Menit' : ''})`.trim();
+
+      let perMeetingText = '-';
+      let expectedPerMeetingMinutes = 0;
+      if (!isNaN(meetVal) && meetVal > 0) {
+        expectedPerMeetingMinutes = Math.round(totalMinutes / meetVal);
+        const jpPerMeet = (jpVal / meetVal).toFixed(1).replace(/\.0$/, '');
+        perMeetingText = `${jpPerMeet} JP (${expectedPerMeetingMinutes} menit) / pertemuan`;
+      }
+
+      return {
+        valid: true,
+        totalMinutes,
+        expectedPerMeetingMinutes,
+        hoursText,
+        perMeetingText
+      };
+    }
+
+    // =========================================================================
+    // VALIDASI DETERMINISTIK DALAM KODE (KODE VALIDATOR)
+    // =========================================================================
+    function runDeterministicValidation(rpmDraft, cpSnapshot, expectedPerMeetingMinutes) {
+      const findings = [];
+
+      if (!rpmDraft || typeof rpmDraft !== 'object') {
+        findings.push({
+          bagian: 'Skema RPM',
+          tingkat: 'Perlu diperbaiki',
+          alasan: 'Objek RPM tidak ditemukan atau format bukan JSON terstruktur.',
+          saran: 'Lakukan generasi ulang RPM secara lengkap.'
+        });
+        return { isValid: false, findings };
+      }
+
+      // 1. Validasi Field Wajib & Schema
+      const requiredTopFields = [
+        'identitas', 'tujuan_pembelajaran', 'kegiatan_pembelajaran',
+        'asesmen', 'prinsip_pembelajaran_mendalam', 'sumber_dan_media'
+      ];
+      for (const f of requiredTopFields) {
+        if (!rpmDraft[f]) {
+          findings.push({
+            bagian: `Skema Data (${f})`,
+            tingkat: 'Perlu diperbaiki',
+            alasan: `Bagian wajib "${f}" tidak ada di dalam dokumen RPM.`,
+            saran: `Tambahkan bagian "${f}" sesuai struktur standar RPM.`
+          });
+        }
+      }
+
+      // 2. Validasi Teks CP Asli Harus Tetap Sama dengan Snapshot
+      const draftCpText = String(rpmDraft.identitas?.teks_cp_asli || '').trim();
+      const snapshotCpText = String(cpSnapshot?.teksCP || cpSnapshot?.cp_text || '').trim();
+      if (!snapshotCpText) {
+        findings.push({
+          bagian: 'Snapshot Capaian Pembelajaran (CP)',
+          tingkat: 'Perlu ditinjau',
+          alasan: 'Snapshot teks CP tidak ditemukan atau belum dipilih pada langkah input.',
+          saran: 'Pilih CP dari katalog atau masukkan teks CP resmi pada formulir input.'
+        });
+      } else if (draftCpText !== snapshotCpText) {
+        findings.push({
+          bagian: 'Integritas Teks CP Asli',
+          tingkat: 'Perlu diperbaiki',
+          alasan: 'Teks CP asli di dalam draf RPM tidak sama persis dengan snapshot resmi yang tersimpan (terjadi modifikasi atau pemotongan teks).',
+          saran: 'Kembalikan teks CP asli persis sama dengan snapshot dokumen resmi tanpa parafrase atau pengubahan.'
+        });
+      }
+
+      // 3. Validasi ID Tujuan Pembelajaran yang dirujuk kegiatan & asesmen
+      const tpList = Array.isArray(rpmDraft.tujuan_pembelajaran) ? rpmDraft.tujuan_pembelajaran : [];
+      const validTpIds = new Set(tpList.map(tp => String(tp.id || '').trim()).filter(Boolean));
+
+      if (validTpIds.size === 0) {
+        findings.push({
+          bagian: 'Tujuan Pembelajaran',
+          tingkat: 'Perlu diperbaiki',
+          alasan: 'Tidak ditemukan butir Tujuan Pembelajaran yang memiliki atribut "id" unik.',
+          saran: 'Berikan ID unik pada setiap tujuan pembelajaran (contoh: TP-1, TP-2).'
+        });
+      }
+
+      // Periksa rujukan pada kegiatan pembelajaran
+      const meetings = Array.isArray(rpmDraft.kegiatan_pembelajaran) ? rpmDraft.kegiatan_pembelajaran : [];
+      meetings.forEach((m, mIdx) => {
+        const mNum = m.pertemuan_ke || (mIdx + 1);
+        const refTpList = Array.isArray(m.tujuan_id_terkait) ? m.tujuan_id_terkait : [];
+        if (refTpList.length === 0) {
+          findings.push({
+            bagian: `Kegiatan Pertemuan ${mNum}`,
+            tingkat: 'Perlu ditinjau',
+            alasan: `Pertemuan ke-${mNum} tidak mencantumkan rujukan ID tujuan pembelajaran ("tujuan_id_terkait").`,
+            saran: `Hubungkan kegiatan pertemuan ${mNum} dengan ID tujuan pembelajaran yang relevan.`
+          });
+        } else {
+          refTpList.forEach(refId => {
+            if (!validTpIds.has(String(refId).trim())) {
+              findings.push({
+                bagian: `Kegiatan Pertemuan ${mNum}`,
+                tingkat: 'Perlu diperbaiki',
+                alasan: `Kegiatan merujuk ke tujuan_id "${refId}" yang tidak ada dalam daftar Tujuan Pembelajaran.`,
+                saran: `Perbaiki rujukan ID tujuan pada pertemuan ke-${mNum} agar mengacu pada ID tujuan yang sah (${Array.from(validTpIds).join(', ')}).`
+              });
+            }
+          });
+        }
+
+        // 4. Validasi Durasi Kegiatan Sesuai Alokasi Waktu Setiap Pertemuan
+        const stepDurations = [
+          m.kegiatan_awal?.durasi_menit,
+          m.kegiatan_inti?.durasi_menit,
+          m.kegiatan_penutup?.durasi_menit
+        ];
+        const sumDuration = stepDurations.reduce((acc, d) => acc + (parseFloat(d) || 0), 0);
+
+        if (expectedPerMeetingMinutes > 0 && Math.abs(sumDuration - expectedPerMeetingMinutes) > 0) {
+          findings.push({
+            bagian: `Alokasi Waktu Pertemuan ${mNum}`,
+            tingkat: 'Perlu diperbaiki',
+            alasan: `Total durasi kegiatan (Awal: ${m.kegiatan_awal?.durasi_menit || 0}m, Inti: ${m.kegiatan_inti?.durasi_menit || 0}m, Penutup: ${m.kegiatan_penutup?.durasi_menit || 0}m = ${sumDuration} menit) tidak sama dengan alokasi target per pertemuan (${expectedPerMeetingMinutes} menit).`,
+            saran: `Sesuaikan rincian durasi tahapan kegiatan pada pertemuan ${mNum} agar pas berjumlah ${expectedPerMeetingMinutes} menit.`
+          });
+        }
+      });
+
+      // Periksa rujukan pada asesmen
+      const asmList = Array.isArray(rpmDraft.asesmen?.teknik_dan_instrumen) ? rpmDraft.asesmen.teknik_dan_instrumen : [];
+      asmList.forEach((a, aIdx) => {
+        const refTpList = Array.isArray(a.tujuan_id_terkait) ? a.tujuan_id_terkait : [];
+        if (refTpList.length === 0) {
+          findings.push({
+            bagian: `Asesmen (${a.nama_asesmen || 'Instrumen ' + (aIdx + 1)})`,
+            tingkat: 'Perlu ditinjau',
+            alasan: `Instrumen asesmen "${a.nama_asesmen || aIdx + 1}" tidak menyertakan rujukan ID tujuan pembelajaran ("tujuan_id_terkait").`,
+            saran: `Tentukan ID tujuan pembelajaran yang diukur oleh asesmen ini.`
+          });
+        } else {
+          refTpList.forEach(refId => {
+            if (!validTpIds.has(String(refId).trim())) {
+              findings.push({
+                bagian: `Asesmen (${a.nama_asesmen || 'Instrumen ' + (aIdx + 1)})`,
+                tingkat: 'Perlu diperbaiki',
+                alasan: `Asesmen merujuk ke tujuan_id "${refId}" yang tidak terdaftar dalam Tujuan Pembelajaran.`,
+                saran: `Perbaiki rujukan ID tujuan pada asesmen agar sesuai daftar sah (${Array.from(validTpIds).join(', ')}).`
+              });
+            }
+          });
+        }
+      });
+
+      // 5. Validasi Sintaks URL
+      const checkUrlsInObj = (obj, path = '') => {
+        if (!obj || typeof obj !== 'object') return;
+        for (const [k, v] of Object.entries(obj)) {
+          const currPath = path ? `${path}.${k}` : k;
+          if (typeof v === 'string' && (k.toLowerCase().includes('url') || v.startsWith('http://') || v.startsWith('https://'))) {
+            if (v.trim() !== '') {
+              const uCheck = parseAndValidateSourceUrl(v);
+              if (!uCheck.valid) {
+                findings.push({
+                  bagian: `URL (${currPath})`,
+                  tingkat: 'Perlu diperbaiki',
+                  alasan: `URL "${v}" tidak valid secara sintaksis: ${uCheck.message}`,
+                  saran: 'Perbaiki alamat URL dengan protokol http:// atau https:// yang valid.'
+                });
+              }
+            }
+          } else if (typeof v === 'object') {
+            checkUrlsInObj(v, currPath);
+          }
+        }
+      };
+      checkUrlsInObj(rpmDraft);
+
+      const hasError = findings.some(f => f.tingkat === 'Perlu diperbaiki');
+      return {
+        isValid: !hasError,
+        findings
+      };
+    }
+
+    // =========================================================================
+    // PANGGILAN API GEMINI: GENERATOR, INSPECTOR, DAN REPAIRER
+    // =========================================================================
+    async function callGeminiApi(systemPrompt, userPrompt, apiKey) {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const payload = {
+        contents: [
+          { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }
+        ],
+        generationConfig: {
+          temperature: 0.2,
+          topP: 0.95,
+          responseMimeType: "application/json"
+        }
+      };
+
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!resp.ok) {
+        const errJson = await resp.json().catch(() => ({}));
+        throw new Error(errJson.error?.message || `HTTP ${resp.status}: Gagal menghubungi layanan AI`);
+      }
+
+      const data = await resp.json();
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) throw new Error('Respon AI kosong.');
+      return JSON.parse(rawText);
+    }
+
+    // =========================================================================
+    // DOKUMEN & KOMPONEN TAMPILAN LAIN
+    // =========================================================================
     function renderDashboard() {
       const t = state.teacher || {};
       const totalStudents = state.students.length;
@@ -678,7 +943,7 @@
                 <span class="text-[#FBBF24]">Persiapan Ajar, Asesmen & Administrasi</span>
               </h1>
               <p class="text-xs sm:text-sm text-blue-100/90 leading-relaxed max-w-xl">
-                Kelola seluruh perangkat pembelajaran, jurnal harian kelas, bank soal, hingga rekapitulasi nilai secara terpusat.
+                Kelola seluruh perangkat pembelajaran, jurnal harian kelas, bank soal, hingga audit independen pembuatan Rencana Pembelajaran Mendalam (RPM).
               </p>
               <div class="pt-2 flex flex-wrap items-center gap-2.5">
                 <button onclick="window.app.switchTab('persiapan')"
@@ -709,9 +974,9 @@
               </div>
             </div>
             <div class="lg:col-span-4 glass-panel rounded-2xl p-4 space-y-3">
-              <div class="text-xs font-bold text-amber-300 uppercase tracking-wider">Manajemen Terpadu</div>
+              <div class="text-xs font-bold text-amber-300 uppercase tracking-wider">Pemeriksaan RPM Mandiri</div>
               <p class="text-xs text-blue-100 leading-relaxed">
-                Dirancang khusus untuk kebutuhan administrasi dan pelaksanaan pembelajaran pribadi guru di kelas tanpa perlu akun terpisah untuk peserta didik.
+                Pemeriksaan RPM dijalankan dengan dua proses independen: validasi deterministik kode dan evaluasi AI pemeriksa terpisah terhadap 9 standar mutu pedagogis.
               </p>
             </div>
           </div>
@@ -795,9 +1060,6 @@
                     <h4 class="font-extrabold text-base text-slate-900 mt-1">${p.topic_title}</h4>
                   </div>
                   <div class="flex items-center gap-2">
-                    <button onclick="window.app.printCurriculumPlan('${p.id}')" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1">
-                      <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak
-                    </button>
                     <button onclick="window.app.deleteCurriculumPlan('${p.id}')" class="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600">
                       <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
@@ -813,40 +1075,9 @@
       `;
     }
 
-    function calculateRpmTime(jp, minutesPerJp, meetings) {
-      const jpVal = parseFloat(jp);
-      const minVal = parseFloat(minutesPerJp);
-      const meetVal = parseInt(meetings, 10);
-
-      if (isNaN(jpVal) || jpVal <= 0 || isNaN(minVal) || minVal <= 0) {
-        return {
-          valid: false,
-          totalMinutes: 0,
-          hoursText: 'Belum dapat dihitung (isi Alokasi JP dan Menit per JP)',
-          perMeetingText: '-'
-        };
-      }
-
-      const totalMinutes = jpVal * minVal;
-      const hours = Math.floor(totalMinutes / 60);
-      const remMinutes = Math.round(totalMinutes % 60);
-      const hoursText = `${totalMinutes} Menit (${hours > 0 ? hours + ' Jam ' : ''}${remMinutes > 0 ? remMinutes + ' Menit' : ''})`.trim();
-
-      let perMeetingText = '-';
-      if (!isNaN(meetVal) && meetVal > 0) {
-        const minPerMeet = Math.round(totalMinutes / meetVal);
-        const jpPerMeet = (jpVal / meetVal).toFixed(1).replace(/\.0$/, '');
-        perMeetingText = `${jpPerMeet} JP (${minPerMeet} menit) / pertemuan`;
-      }
-
-      return {
-        valid: true,
-        totalMinutes,
-        hoursText,
-        perMeetingText
-      };
-    }
-
+    // =========================================================================
+    // MODUL RPM AI LENGKAP: 5 TAHAP INPUT + TAHAP GENERASI & PEMERIKSAAN BERLAPIS
+    // =========================================================================
     function renderRpmAI() {
       const step = state.rpmActiveStep || 1;
       const f = state.rpmCurrentForm || createEmptyRpmForm();
@@ -855,6 +1086,8 @@
       const kon = f.kondisi || {};
       const cp = f.referensi_cp || {};
       const pref = f.preferensi || {};
+      const genRpm = f.generated_rpm;
+      const review = f.review_results;
 
       const timeCalc = calculateRpmTime(idn.jp_total, idn.minutes_per_jp, idn.meeting_count);
 
@@ -874,16 +1107,16 @@
       const isCatalogAdmin = Boolean(state.teacher?.is_catalog_admin === true);
 
       const stepsMeta = [
-        { no: 1, title: '1. Identitas', desc: 'Satuan pendidikan, mapel & waktu' },
-        { no: 2, title: '2. Karakteristik Murid', desc: 'Pengetahuan awal, minat & dukungan' },
-        { no: 3, title: '3. Kondisi Pembelajaran', desc: 'Sarana, teknologi & konteks nyata' },
-        { no: 4, title: '4. Referensi CP', desc: 'Katalog CP, verifikasi & sumber resmi' },
-        { no: 5, title: '5. Preferensi Guru', desc: 'TP awal, strategi & tinjauan data' }
+        { no: 1, title: '1. Identitas', desc: 'Satuan pendidikan & waktu' },
+        { no: 2, title: '2. Murid', desc: 'Pengetahuan & minat' },
+        { no: 3, title: '3. Lingkungan', desc: 'Sarana & konteks nyata' },
+        { no: 4, title: '4. Referensi CP', desc: 'Snapshot teks & sumber' },
+        { no: 5, title: '5. Preferensi & RPM', desc: 'Generasi, Audit & Perbaikan' }
       ];
 
       const checkEmptyBadge = (val) => {
         if (val === undefined || val === null || String(val).trim() === '') {
-          return `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">Belum diisi (Tidak diasumsikan sistem)</span>`;
+          return `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">Belum diisi (Tidak diasumsikan)</span>`;
         }
         return `<span class="text-slate-800 font-medium whitespace-pre-line">${String(val).replace(/</g, '&lt;')}</span>`;
       };
@@ -894,25 +1127,30 @@
             <div class="space-y-1.5">
               <div class="inline-flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-widest text-[#FBBF24] bg-white/10 px-3 py-1 rounded-full">
                 <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-                <span>Asisten AI Pembuat RPM • Tahap Input & Referensi CP</span>
+                <span>Asisten AI Pembuat RPM • Generasi & Pemeriksaan Independen</span>
               </div>
               <h3 class="text-xl sm:text-2xl font-extrabold tracking-tight">Rencana Pembelajaran Mendalam (RPM)</h3>
               <p class="text-xs text-blue-100 max-w-3xl leading-relaxed">
-                Lengkapi konteks pembelajaran dan pilih referensi Capaian Pembelajaran (CP). Teks CP yang dipilih disimpan utuh sebagai <em>snapshot</em> bersama draf RPM dan dipisahkan secara tegas dari Tujuan Pembelajaran.
+                Menyusun RPM secara mendalam berlandaskan CP resmi, dilengkapi <strong>pemeriksaan AI terpisah</strong> dan <strong>validasi deterministik kode</strong> untuk menjaga akurasi serta relevansi kontekstual.
               </p>
             </div>
             <div class="flex flex-wrap items-center gap-2 shrink-0">
+              <button type="button" onclick="window.app.openApiKeyModal()"
+                class="px-3.5 py-2 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 border border-amber-300/40 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition">
+                <i data-lucide="key" class="w-3.5 h-3.5"></i>
+                <span>${getGeminiApiKey() ? 'API AI Tersimpan' : 'Atur API Key AI'}</span>
+              </button>
               ${isCatalogAdmin ? `
                 <button type="button" onclick="window.app.openCpCatalogAdminModal()"
                   class="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-300/40 text-emerald-200 font-bold text-xs flex items-center gap-1.5 transition">
                   <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
-                  <span>Kelola Katalog CP (Admin)</span>
+                  <span>Katalog CP (Admin)</span>
                 </button>
               ` : ''}
               <button type="button" onclick="window.app.fillRpmFromProfile()"
                 class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition">
                 <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
-                <span>Isi Cepat Identitas dari Profil</span>
+                <span>Isi dari Profil</span>
               </button>
               <button type="button" onclick="window.app.resetRpmForm()"
                 class="px-3.5 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/30 text-rose-100 font-bold text-xs flex items-center gap-1.5 transition">
@@ -923,6 +1161,7 @@
           </div>
         </div>
 
+        <!-- PROGRESS BAR LANGKAH -->
         <div class="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm">
           <div class="grid grid-cols-1 sm:grid-cols-5 gap-2">
             ${stepsMeta.map(s => {
@@ -948,9 +1187,11 @@
           </div>
         </div>
 
+        <!-- AREA UTAMA FORMULIR & DAFTAR DRAF -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-5">
             <form id="rpm-step-form" onsubmit="event.preventDefault(); window.app.saveRpmDraft();">
+              <!-- LANGKAH 1 -->
               <div class="${step === 1 ? 'block' : 'hidden'} space-y-4">
                 <div class="border-b border-slate-100 pb-3">
                   <span class="text-[11px] font-extrabold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full">Kelompok 1 dari 5</span>
@@ -981,7 +1222,7 @@
                     <label class="font-bold text-slate-700 block mb-1">Semester</label>
                     <select id="rpm-semester" onchange="window.app.syncRpmInputs()"
                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white focus:border-blue-600 outline-none">
-                      <option value="" ${!idn.semester ? 'selected' : ''}>-- Pilih Semester (Belum Diisi) --</option>
+                      <option value="" ${!idn.semester ? 'selected' : ''}>-- Pilih Semester --</option>
                       <option value="Ganjil" ${idn.semester === 'Ganjil' ? 'selected' : ''}>Ganjil</option>
                       <option value="Genap" ${idn.semester === 'Genap' ? 'selected' : ''}>Genap</option>
                     </select>
@@ -1026,9 +1267,9 @@
                   <div class="flex items-center justify-between">
                     <span class="text-xs font-extrabold text-blue-950 flex items-center gap-1.5">
                       <i data-lucide="clock" class="w-4 h-4 text-blue-700"></i>
-                      <span>Alokasi Waktu & Kalkulasi Total Durasi</span>
+                      <span>Alokasi Waktu & Validasi Durasi Pertemuan</span>
                     </span>
-                    <span class="text-[11px] font-bold text-blue-700">Otomatis: JP × Menit per JP</span>
+                    <span class="text-[11px] font-bold text-blue-700">Wajib sesuai total per pertemuan</span>
                   </div>
 
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
@@ -1058,89 +1299,92 @@
                       <strong id="rpm-calc-total" class="text-blue-900 font-extrabold">${timeCalc.hoursText}</strong>
                     </div>
                     <div class="p-3 rounded-xl bg-white border border-blue-200/60 flex items-center justify-between">
-                      <span class="text-slate-500 font-semibold">Rata-rata per Pertemuan:</span>
+                      <span class="text-slate-500 font-semibold">Target per Pertemuan:</span>
                       <strong id="rpm-calc-per-meeting" class="text-emerald-800 font-extrabold">${timeCalc.perMeetingText}</strong>
                     </div>
                   </div>
                 </div>
               </div>
 
+              <!-- LANGKAH 2 -->
               <div class="${step === 2 ? 'block' : 'hidden'} space-y-4">
                 <div class="border-b border-slate-100 pb-3">
                   <span class="text-[11px] font-extrabold uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full">Kelompok 2 dari 5</span>
                   <h4 class="text-base font-extrabold text-slate-900 mt-1">Karakteristik & Kebutuhan Belajar Murid</h4>
-                  <p class="text-xs text-slate-500">Tuliskan kondisi nyata murid di kelas Anda. Biarkan kosong jika belum teridentifikasi.</p>
+                  <p class="text-xs text-slate-500">Tuliskan kondisi nyata murid. Draf RPM dilarang mengasumsikan kemampuan atau minat yang tidak didukung data ini.</p>
                 </div>
 
                 <div class="space-y-3.5 text-xs">
                   <div>
                     <label class="font-bold text-slate-700 block mb-1">Pengetahuan Awal Murid</label>
                     <textarea id="rpm-prior_knowledge" rows="3" oninput="window.app.syncRpmInputs()"
-                      placeholder="Apa yang sudah diketahui atau dikuasai murid terkait topik ini? (Kosongkan jika belum ada data)"
+                      placeholder="Apa yang sudah diketahui atau belum dikuasai murid terkait topik ini? (Kosongkan jika belum ada data)"
                       class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${kar.prior_knowledge || ''}</textarea>
                   </div>
                   <div>
                     <label class="font-bold text-slate-700 block mb-1">Minat & Ketertarikan Murid</label>
                     <textarea id="rpm-student_interests" rows="2" oninput="window.app.syncRpmInputs()"
-                      placeholder="Contoh: Menyukai aktivitas visual, permainan kuis kelompok, atau topik media sosial..."
+                      placeholder="Contoh: Menyukai aktivitas visual, kuis kolaboratif, atau eksplorasi teknologi..."
                       class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${kar.student_interests || ''}</textarea>
                   </div>
                   <div>
                     <label class="font-bold text-slate-700 block mb-1">Kebutuhan Belajar Murid</label>
                     <textarea id="rpm-learning_needs" rows="2" oninput="window.app.syncRpmInputs()"
-                      placeholder="Contoh: Perlu contoh konkret sebelum masuk ke abstraksi/rumus, variasi aktivitas kinestetik & diskusi..."
+                      placeholder="Contoh: Membutuhkan jembatan analogi konkret sebelum ke algoritma, variasi audio-visual..."
                       class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${kar.learning_needs || ''}</textarea>
                   </div>
                   <div>
-                    <label class="font-bold text-slate-700 block mb-1">Kebutuhan Dukungan Khusus / Perancah (Scaffolding)</label>
+                    <label class="font-bold text-slate-700 block mb-1">Kebutuhan Dukungan Khusus / Scaffolding</label>
                     <textarea id="rpm-support_needs" rows="2" oninput="window.app.syncRpmInputs()"
-                      placeholder="Contoh: 3 murid memerlukan panduan langkah demi langkah tertulis dan pendampingan sebaya..."
+                      placeholder="Contoh: Bimbingan bertahap bagi murid yang lambat memahami simbol logika..."
                       class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${kar.support_needs || ''}</textarea>
                   </div>
                 </div>
               </div>
 
+              <!-- LANGKAH 3 -->
               <div class="${step === 3 ? 'block' : 'hidden'} space-y-4">
                 <div class="border-b border-slate-100 pb-3">
                   <span class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">Kelompok 3 dari 5</span>
                   <h4 class="text-base font-extrabold text-slate-900 mt-1">Kondisi Pembelajaran & Konteks Lingkungan</h4>
-                  <p class="text-xs text-slate-500">Informasi sarana dan konteks keseharian murid agar rancangan kegiatan relevan dan realistis.</p>
+                  <p class="text-xs text-slate-500">Kesesuaian dengan fasilitas nyata mencegah AI merancang aktivitas di luar kemampuan sarana sekolah.</p>
                 </div>
 
                 <div class="space-y-3.5 text-xs">
                   <div>
                     <label class="font-bold text-slate-700 block mb-1">Sarana & Prasarana Kelas</label>
                     <textarea id="rpm-facilities" rows="2" oninput="window.app.syncRpmInputs()"
-                      placeholder="Contoh: Papan tulis, proyektor, meja kursi yang dapat diatur berkelompok, kertas plano..."
+                      placeholder="Contoh: Proyektor LCD, papan tulis, meja kursi kelompok, kertas plano & spidol..."
                       class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${kon.facilities || ''}</textarea>
                   </div>
                   <div>
                     <label class="font-bold text-slate-700 block mb-1">Lingkungan Belajar</label>
                     <textarea id="rpm-environment" rows="2" oninput="window.app.syncRpmInputs()"
-                      placeholder="Contoh: Ruang kelas reguler dengan 32 murid, halaman sekolah, atau laboratorium..."
+                      placeholder="Contoh: Ruang kelas berkapasitas 32 siswa, ventilasi baik, suasana tenang..."
                       class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${kon.environment || ''}</textarea>
                   </div>
                   <div>
                     <label class="font-bold text-slate-700 block mb-1">Ketersediaan Teknologi & Internet</label>
                     <textarea id="rpm-technology_availability" rows="2" oninput="window.app.syncRpmInputs()"
-                      placeholder="Contoh: Lab komputer 15 unit (berbagi berpasangan) atau tanpa perangkat gawai murid (unplugged)..."
+                      placeholder="Contoh: Komputer lab 1 unit untuk 2 anak (pairing), atau pembelajaran plugged/unplugged..."
                       class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${kon.technology_availability || ''}</textarea>
                   </div>
                   <div>
                     <label class="font-bold text-slate-700 block mb-1">Konteks Kehidupan Sehari-hari Murid</label>
                     <textarea id="rpm-daily_life_context" rows="3" oninput="window.app.syncRpmInputs()"
-                      placeholder="Contoh: Lingkungan perkotaan/pedesaan, kebiasaan berbelanja di kantin, antrean transportasi, pengelolaan sampah sekolah..."
+                      placeholder="Contoh: Kasus antrean di kantin, pembagian jadwal piket, atau pengelolaan sampah di lingkungan sekolah..."
                       class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${kon.daily_life_context || ''}</textarea>
                   </div>
                 </div>
               </div>
 
+              <!-- LANGKAH 4 -->
               <div class="${step === 4 ? 'block' : 'hidden'} space-y-5">
                 <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
                     <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">Kelompok 4 dari 5</span>
                     <h4 class="text-base font-extrabold text-slate-900 mt-1">Pemilihan Referensi Capaian Pembelajaran (CP)</h4>
-                    <p class="text-xs text-slate-500">Pilih dari katalog CP terverifikasi atau masukkan teks CP beserta sumber resmi secara manual.</p>
+                    <p class="text-xs text-slate-500">Teks CP yang dipilih akan dikunci sebagai snapshot resmi dan diverifikasi kesamaan karakternya.</p>
                   </div>
                   <div class="shrink-0">
                     ${cp.verification_status === 'Terverifikasi' ? `
@@ -1154,30 +1398,6 @@
                         <span>Dimasukkan pengguna — belum diverifikasi</span>
                       </span>
                     `}
-                  </div>
-                </div>
-
-                <div class="p-4 rounded-2xl bg-blue-50/70 border border-blue-200/80 space-y-2.5 text-xs">
-                  <div class="flex items-start gap-2.5">
-                    <i data-lucide="book-open-check" class="w-4 h-4 text-blue-800 shrink-0 mt-0.5"></i>
-                    <div class="space-y-1 flex-1">
-                      <div class="font-extrabold text-blue-950">Pintu Masuk Rujukan Resmi Kemendikdasmen</div>
-                      <p class="text-[11px] text-slate-600 leading-relaxed">
-                        Tautan di bawah ini merupakan <strong>pintu masuk rujukan umum</strong>, bukan tautan langsung untuk setiap CP. Sistem tidak mengklaim katalog selalu terbaru tanpa proses verifikasi. Selain itu, penggunaan domain resmi saja tidak otomatis membuktikan bahwa isi CP yang dimasukkan telah diverifikasi.
-                      </p>
-                      <div class="flex flex-wrap items-center gap-2 pt-1">
-                        <a href="https://kurikulum.kemendikdasmen.go.id/rujukan" target="_blank" rel="noopener noreferrer"
-                          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-blue-50 text-blue-800 border border-blue-200 font-bold text-[11px] shadow-sm transition">
-                          <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                          <span>Rujukan Kurikulum Kemendikdasmen</span>
-                        </a>
-                        <a href="https://kurikulum.kemendikdasmen.go.id/pembelajaran-mendalam" target="_blank" rel="noopener noreferrer"
-                          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-blue-50 text-blue-800 border border-blue-200 font-bold text-[11px] shadow-sm transition">
-                          <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-                          <span>Rujukan Pembelajaran Mendalam</span>
-                        </a>
-                      </div>
-                    </div>
                   </div>
                 </div>
 
@@ -1210,59 +1430,34 @@
 
                 ${activeModeSumber === 'katalog' ? `
                   <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-3 text-xs">
-                    <div class="flex items-center justify-between">
-                      <span class="font-extrabold text-slate-900 flex items-center gap-1.5">
-                        <i data-lucide="library" class="w-4 h-4 text-blue-700"></i>
-                        <span>Katalog CP Terverifikasi (${filterSubject || 'Semua Mapel'} • ${filterPhase || 'Semua Fase'})</span>
-                      </span>
-                    </div>
+                    <span class="font-extrabold text-slate-900 flex items-center gap-1.5">
+                      <i data-lucide="library" class="w-4 h-4 text-blue-700"></i>
+                      <span>Katalog CP Terverifikasi</span>
+                    </span>
 
                     ${verifiedCatalogMatches.length === 0 ? `
-                      <div class="p-4 rounded-xl bg-amber-50/90 border border-amber-200 text-amber-950 space-y-2">
-                        <div class="font-extrabold flex items-center gap-1.5">
-                          <i data-lucide="info" class="w-4 h-4 text-amber-700 shrink-0"></i>
-                          <span>Belum tersedia katalog CP terverifikasi untuk Mata Pelajaran & Fase ini.</span>
-                        </div>
-                        <p class="text-[11px] text-amber-800 leading-relaxed">
-                          Sistem tidak membuat teks CP atau nomor keputusan otomatis. Silakan gunakan <strong>Input Manual Teks CP dan URL Sumber Resmi</strong> di bawah ini (akan ditandai sebagai <em>"Dimasukkan pengguna — belum diverifikasi"</em>).
-                        </p>
+                      <div class="p-3.5 rounded-xl bg-amber-50/90 border border-amber-200 text-amber-950 space-y-2">
+                        <div class="font-bold">Belum tersedia katalog CP terverifikasi untuk Mata Pelajaran & Fase ini.</div>
+                        <p class="text-[11px] leading-relaxed">Gunakan mode input manual dan lengkapi URL dokumen resmi Kemendikdasmen.</p>
                         <button type="button" onclick="window.app.setCpSourceMode('manual')"
                           class="px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-[11px] transition">
-                          Gunakan Input Manual CP Sekarang
+                          Pindah ke Input Manual
                         </button>
                       </div>
                     ` : `
-                      <div class="space-y-2.5 max-h-60 overflow-y-auto custom-scroll pr-1">
+                      <div class="space-y-2.5 max-h-56 overflow-y-auto custom-scroll pr-1">
                         ${verifiedCatalogMatches.map(item => {
-                          const itemUrlInfo = parseAndValidateSourceUrl(item.urlSumber);
                           const isChosen = cp.selected_catalog_id === item.id;
                           return `
-                            <div class="p-3.5 rounded-xl border transition ${isChosen ? 'bg-blue-50 border-blue-500 shadow-sm' : 'bg-white border-slate-200 hover:border-slate-300'} space-y-2">
-                              <div class="flex flex-wrap items-center justify-between gap-2">
-                                <div class="flex items-center gap-1.5">
-                                  <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-900 font-extrabold text-[10px]">${item.mataPelajaran} • ${item.fase}</span>
-                                  ${item.elemen ? `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[10px]">Elemen: ${item.elemen}</span>` : ''}
-                                  <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-bold text-[10px]">Terverifikasi (${item.tanggalVerifikasi || '-'})</span>
-                                </div>
-                                <div class="flex items-center gap-1.5">
-                                  ${itemUrlInfo.valid ? `
-                                    <a href="${itemUrlInfo.url}" target="_blank" rel="noopener noreferrer"
-                                      class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] flex items-center gap-1">
-                                      <i data-lucide="external-link" class="w-3 h-3"></i>
-                                      <span>Buka Sumber Resmi</span>
-                                    </a>
-                                  ` : ''}
-                                  <button type="button" onclick="window.app.selectCpFromCatalog('${item.id}')"
-                                    class="px-3 py-1 rounded-lg ${isChosen ? 'bg-emerald-600 text-white' : 'bg-[#072B7A] hover:bg-blue-800 text-white'} font-bold text-[11px]">
-                                    ${isChosen ? 'Terpilih' : 'Pilih CP Ini'}
-                                  </button>
-                                </div>
+                            <div class="p-3 rounded-xl border transition ${isChosen ? 'bg-blue-50 border-blue-500 shadow-sm' : 'bg-white border-slate-200'} space-y-1.5">
+                              <div class="flex items-center justify-between">
+                                <span class="font-bold text-blue-900">${item.mataPelajaran} • ${item.fase} ${item.elemen ? `(${item.elemen})` : ''}</span>
+                                <button type="button" onclick="window.app.selectCpFromCatalog('${item.id}')"
+                                  class="px-3 py-1 rounded-lg ${isChosen ? 'bg-emerald-600 text-white' : 'bg-[#072B7A] text-white'} font-bold text-[11px]">
+                                  ${isChosen ? 'Terpilih' : 'Pilih CP Ini'}
+                                </button>
                               </div>
-                              <div class="text-[11px] text-slate-600">
-                                <strong>Dokumen:</strong> ${item.judulDokumen || '-'} ${item.nomorDokumen ? `• No: ${item.nomorDokumen}` : ''} ${item.tahunDokumen ? `(${item.tahunDokumen})` : ''}
-                                ${itemUrlInfo.valid ? `<span class="ml-1 text-blue-700 font-semibold">[Domain: ${itemUrlInfo.domain}]</span>` : ''}
-                              </div>
-                              <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200/70 text-slate-800 whitespace-pre-line text-[11px] leading-relaxed">${item.teksCP}</div>
+                              <p class="text-[11px] text-slate-700 leading-relaxed">${item.teksCP}</p>
                             </div>
                           `;
                         }).join('')}
@@ -1272,20 +1467,9 @@
                 ` : ''}
 
                 <div class="p-4 rounded-2xl bg-white border border-slate-200 space-y-4 text-xs">
-                  <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
-                    <div>
-                      <h5 class="font-extrabold text-slate-900">Detail Kutipan Teks CP & Metadata Sumber</h5>
-                      <p class="text-[11px] text-slate-500">
-                        ${cp.verification_status === 'Terverifikasi'
-                          ? 'Diambil dari katalog terverifikasi. Mengubah isi teks atau dokumen secara manual akan mengubah status menjadi "Dimasukkan pengguna — belum diverifikasi".'
-                          : 'Masukkan kutipan teks CP asli dan URL sumber resmi. Ditandai sebagai "Dimasukkan pengguna — belum diverifikasi".'}
-                      </p>
-                    </div>
-                  </div>
-
                   <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                     <div>
-                      <label class="font-bold text-slate-700 block mb-1">Elemen CP (Jika Tersedia)</label>
+                      <label class="font-bold text-slate-700 block mb-1">Elemen CP</label>
                       <input type="text" id="rpm-cp_element" value="${cp.cp_element || ''}" oninput="window.app.onManualCpEdit()"
                         placeholder="Contoh: Berpikir Komputasional"
                         class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 outline-none" />
@@ -1293,149 +1477,297 @@
                     <div>
                       <label class="font-bold text-slate-700 block mb-1">Judul Dokumen Sumber</label>
                       <input type="text" id="rpm-source_title" value="${cp.source_title || ''}" oninput="window.app.onManualCpEdit()"
-                        placeholder="Contoh: Keputusan Kepala BSKAP"
+                        placeholder="Keputusan Kepala BSKAP..."
                         class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 outline-none" />
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                       <div>
-                        <label class="font-bold text-slate-700 block mb-1">Nomor Dokumen</label>
+                        <label class="font-bold text-slate-700 block mb-1">No. Dokumen</label>
                         <input type="text" id="rpm-doc_number" value="${cp.doc_number || ''}" oninput="window.app.onManualCpEdit()"
-                          placeholder="Jika diketahui"
+                          placeholder="Nomor SK"
                           class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 outline-none" />
                       </div>
                       <div>
                         <label class="font-bold text-slate-700 block mb-1">Tahun Dokumen</label>
                         <input type="text" id="rpm-doc_year" value="${cp.doc_year || ''}" oninput="window.app.onManualCpEdit()"
-                          placeholder="Contoh: 2024"
+                          placeholder="2024"
                           class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 outline-none" />
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <label class="font-bold text-slate-700 block mb-1">Teks Capaian Pembelajaran (CP) Asli <span class="text-slate-400 font-normal">(Disimpan utuh sebagai snapshot; terpisah dari TP)</span></label>
+                    <label class="font-bold text-slate-700 block mb-1">Kutipan Teks CP Asli (Snapshot Terkunci)</label>
                     <textarea id="rpm-cp_text" rows="4" oninput="window.app.onManualCpEdit()"
-                      placeholder="Tempelkan kutipan utuh teks Capaian Pembelajaran (CP) dari dokumen rujukan..."
+                      placeholder="Tempelkan kutipan utuh teks Capaian Pembelajaran dari dokumen resmi..."
                       class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none leading-relaxed">${cp.cp_text || ''}</textarea>
                   </div>
 
-                  <div class="space-y-2">
-                    <label class="font-bold text-slate-700 block">URL Sumber Resmi (http:// atau https://)</label>
-                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                      <input type="url" id="rpm-official_url" value="${cp.official_url || ''}" oninput="window.app.onManualCpEdit()"
-                        placeholder="https://kurikulum.kemendikdasmen.go.id/..."
-                        class="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 outline-none" />
-                      <button type="button" id="btn-open-official-url" onclick="window.app.openCurrentCpSourceUrl()"
-                        ${urlCheck.valid ? '' : 'disabled'}
-                        class="px-4 py-2.5 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 shrink-0 transition ${
-                          urlCheck.valid
-                            ? 'bg-[#072B7A] hover:bg-blue-800 text-white shadow-sm cursor-pointer'
-                            : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-                        }">
-                        <i data-lucide="external-link" class="w-4 h-4"></i>
-                        <span>Buka Sumber Resmi</span>
-                      </button>
-                    </div>
-
-                    <div id="rpm-url-validation-box" class="p-3 rounded-xl border text-[11px] flex flex-wrap items-center justify-between gap-2 ${
-                      !cp.official_url
-                        ? 'bg-slate-50 border-slate-200 text-slate-500'
-                        : urlCheck.valid
-                          ? 'bg-blue-50/70 border-blue-200 text-blue-950'
-                          : 'bg-rose-50 border-rose-200 text-rose-800'
-                    }">
-                      <div class="flex items-center gap-2">
-                        <i data-lucide="${!cp.official_url ? 'globe' : urlCheck.valid ? 'check-circle-2' : 'alert-triangle'}" class="w-4 h-4 shrink-0"></i>
-                        <span id="rpm-url-domain-label" class="font-bold">${urlCheck.message}</span>
-                      </div>
-                      <span class="text-[10px] italic text-slate-500">
-                        Catatan: Domain resmi saja tidak membuktikan bahwa isi CP telah diverifikasi.
-                      </span>
+                  <div>
+                    <label class="font-bold text-slate-700 block mb-1">URL Sumber Resmi (Valid Sintaks http/https)</label>
+                    <input type="url" id="rpm-official_url" value="${cp.official_url || ''}" oninput="window.app.onManualCpEdit()"
+                      placeholder="https://kurikulum.kemendikdasmen.go.id/..."
+                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 outline-none" />
+                    <div class="mt-1 text-[11px] ${urlCheck.valid ? 'text-blue-700 font-semibold' : 'text-slate-500'}">
+                      ${urlCheck.message}
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div class="${step === 5 ? 'block' : 'hidden'} space-y-4">
+              <!-- LANGKAH 5: PREFERENSI & GENERASI / PEMERIKSAAN RPM -->
+              <div class="${step === 5 ? 'block' : 'hidden'} space-y-5">
                 <div class="border-b border-slate-100 pb-3">
                   <span class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full">Kelompok 5 dari 5</span>
-                  <h4 class="text-base font-extrabold text-slate-900 mt-1">Preferensi Guru & Pemisahan CP Asli vs Tujuan Pembelajaran</h4>
-                  <p class="text-xs text-slate-500">Rumusan Tujuan Pembelajaran (TP) dipisahkan secara tegas dari kutipan teks CP asli.</p>
+                  <h4 class="text-base font-extrabold text-slate-900 mt-1">Preferensi Guru, Generasi RPM & Pemeriksaan Independen</h4>
+                  <p class="text-xs text-slate-500">Pemeriksaan dilakukan secara terpisah oleh AI pemeriksa dan kode validasi untuk menjamin mutu.</p>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs">
-                  <div class="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-1.5">
-                    <div class="flex items-center justify-between">
-                      <span class="font-extrabold text-amber-950 flex items-center gap-1.5">
-                        <i data-lucide="quote" class="w-3.5 h-3.5 text-amber-700"></i>
-                        <span>Snapshot Kutipan Teks CP Asli</span>
-                      </span>
-                      <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-white border border-amber-200 text-amber-900">
-                        ${cp.verification_status || 'Dimasukkan pengguna — belum diverifikasi'}
-                      </span>
-                    </div>
-                    <div class="text-slate-700 whitespace-pre-line leading-relaxed max-h-36 overflow-y-auto custom-scroll">
-                      ${cp.cp_text ? String(cp.cp_text).replace(/</g, '&lt;') : '<em class="text-slate-400">Belum ada teks CP yang diisi pada Kelompok 4.</em>'}
-                    </div>
-                  </div>
-
-                  <div class="p-3.5 rounded-2xl bg-indigo-50/60 border border-indigo-200/80 space-y-1.5">
-                    <div class="flex items-center justify-between">
-                      <span class="font-extrabold text-indigo-950 flex items-center gap-1.5">
-                        <i data-lucide="git-pull-request" class="w-3.5 h-3.5 text-indigo-700"></i>
-                        <span>Tujuan Pembelajaran (Hasil Pengembangan AI)</span>
-                      </span>
-                      <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-white border border-indigo-200 text-indigo-800">Terpisah dari CP</span>
-                    </div>
-                    <div class="text-slate-600 text-[11px] leading-relaxed">
-                      ${pref.ai_developed_tp
-                        ? `<div class="whitespace-pre-line">${String(pref.ai_developed_tp).replace(/</g, '&lt;')}</div>`
-                        : '<em>Belum dibuat (Generator AI belum diaktifkan pada tahap ini. TP hasil pengembangan AI nantinya akan ditempatkan di bagian ini, terpisah dari teks CP asli).</em>'}
-                    </div>
-                  </div>
-                </div>
-
-                <div class="space-y-3.5 text-xs">
+                <div class="space-y-3 text-xs">
                   <div>
-                    <label class="font-bold text-slate-700 block mb-1">Tujuan Pembelajaran Awal dari Guru (Jika Ada)</label>
-                    <textarea id="rpm-initial_tp" rows="3" oninput="window.app.syncRpmInputs()"
-                      placeholder="Tuliskan draf Tujuan Pembelajaran awal versi Guru jika Anda sudah memilikinya, atau kosongkan..."
+                    <label class="font-bold text-slate-700 block mb-1">Tujuan Pembelajaran Awal dari Guru (Opsional)</label>
+                    <textarea id="rpm-initial_tp" rows="2" oninput="window.app.syncRpmInputs()"
+                      placeholder="Draf rumusan tujuan guru jika sudah ada..."
                       class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${pref.initial_tp || ''}</textarea>
                   </div>
                   <div>
                     <label class="font-bold text-slate-700 block mb-1">Strategi / Model Pembelajaran yang Diinginkan</label>
                     <textarea id="rpm-learning_strategy" rows="2" oninput="window.app.syncRpmInputs()"
-                      placeholder="Contoh: Problem-Based Learning (PBL), diskusi studi kasus, pembelajaran berdiferensiasi..."
+                      placeholder="Contoh: Problem-Based Learning (PBL) berkesadaran dan interaktif..."
                       class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${pref.learning_strategy || ''}</textarea>
                   </div>
-                  <div>
-                    <label class="font-bold text-slate-700 block mb-1">Catatan Khusus Guru</label>
-                    <textarea id="rpm-special_notes" rows="2" oninput="window.app.syncRpmInputs()"
-                      placeholder="Catatan tambahan, batasan waktu, atau penekanan karakter..."
-                      class="w-full p-3 rounded-xl border border-slate-200 focus:border-blue-600 outline-none">${pref.special_notes || ''}</textarea>
+                </div>
+
+                <!-- TOMBOL GENERASI & STATUS PEMERIKSAAN -->
+                <div class="p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/90 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div class="space-y-1 text-center sm:text-left">
+                    <div class="font-extrabold text-slate-900 text-sm flex items-center justify-center sm:justify-start gap-2">
+                      <i data-lucide="cpu" class="w-4 h-4 text-blue-700"></i>
+                      <span>Sintesis & Validasi RPM Pembelajaran Mendalam</span>
+                    </div>
+                    <p class="text-xs text-slate-600">
+                      AI Generator menyusun draf RPM -> Dilanjutkan Pemeriksaan Mandiri (AI Pemeriksa terpisah & validator kode).
+                    </p>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <button type="button" onclick="window.app.generateRpmWithAi()"
+                      ${state.isGeneratingRpm || state.isReviewingRpm ? 'disabled' : ''}
+                      class="px-5 py-2.5 rounded-xl bg-[#072B7A] hover:bg-blue-800 disabled:bg-slate-300 text-white font-extrabold text-xs shadow-md flex items-center gap-2 transition active:scale-95">
+                      <i data-lucide="${state.isGeneratingRpm ? 'loader-2' : 'sparkles'}" class="w-4 h-4 ${state.isGeneratingRpm ? 'animate-spin' : 'text-amber-400'}"></i>
+                      <span>${state.isGeneratingRpm ? 'Menyusun RPM...' : genRpm ? 'Generasi Ulang RPM' : 'Mulai Generasi RPM AI'}</span>
+                    </button>
+                    ${genRpm ? `
+                      <button type="button" onclick="window.app.auditRpmNow()"
+                        ${state.isReviewingRpm ? 'disabled' : ''}
+                        class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-extrabold text-xs shadow-md flex items-center gap-1.5 transition">
+                        <i data-lucide="${state.isReviewingRpm ? 'loader-2' : 'shield-check'}" class="w-4 h-4 ${state.isReviewingRpm ? 'animate-spin' : ''}"></i>
+                        <span>${state.isReviewingRpm ? 'Memeriksa...' : 'Periksa Ulang RPM'}</span>
+                      </button>
+                    ` : ''}
                   </div>
                 </div>
 
-                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-3 text-xs">
-                  <div class="flex items-center justify-between border-b border-slate-200 pb-2">
-                    <span class="font-extrabold text-slate-900 flex items-center gap-1.5">
-                      <i data-lucide="clipboard-list" class="w-4 h-4 text-blue-700"></i>
-                      <span>Ringkasan Status Input & Snapshot CP (Transparansi Data)</span>
-                    </span>
-                    <span class="text-[10px] font-bold text-slate-500">Data kosong tidak dianggap fakta</span>
+                <!-- HASIL AUDIT / DAFTAR TEMUAN -->
+                ${review ? `
+                  <div class="p-5 rounded-2xl border ${
+                    review.status === 'Tidak ditemukan masalah pada pemeriksaan ini'
+                      ? 'bg-emerald-50/80 border-emerald-200'
+                      : review.status === 'Perlu diperbaiki'
+                        ? 'bg-rose-50/80 border-rose-200'
+                        : 'bg-amber-50/80 border-amber-200'
+                  } space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-black/10 pb-3">
+                      <div>
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Hasil Pemeriksaan RPM Terpadu</span>
+                        <h5 class="text-base font-black flex items-center gap-2 ${
+                          review.status === 'Tidak ditemukan masalah pada pemeriksaan ini'
+                            ? 'text-emerald-900'
+                            : review.status === 'Perlu diperbaiki'
+                              ? 'text-rose-900'
+                              : 'text-amber-950'
+                        }">
+                          <i data-lucide="${
+                            review.status === 'Tidak ditemukan masalah pada pemeriksaan ini'
+                              ? 'check-circle'
+                              : review.status === 'Perlu diperbaiki'
+                                ? 'alert-octagon'
+                                : 'alert-triangle'
+                          }" class="w-5 h-5"></i>
+                          <span>Status: ${review.status}</span>
+                        </h5>
+                      </div>
+                      ${review.status !== 'Tidak ditemukan masalah pada pemeriksaan ini' && review.status !== 'Pemeriksaan belum selesai' ? `
+                        <button type="button" onclick="window.app.repairRpmBasedOnFindings()"
+                          ${state.isRepairingRpm ? 'disabled' : ''}
+                          class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs shadow-md flex items-center gap-1.5 transition active:scale-95">
+                          <i data-lucide="${state.isRepairingRpm ? 'loader-2' : 'wrench'}" class="w-4 h-4 ${state.isRepairingRpm ? 'animate-spin' : ''}"></i>
+                          <span>${state.isRepairingRpm ? 'Merumuskan Perbaikan...' : 'Perbaiki berdasarkan temuan'}</span>
+                        </button>
+                      ` : ''}
+                    </div>
+
+                    <div class="text-xs text-slate-700 leading-relaxed">
+                      ${review.keterangan_pemeriksaan || 'Pemeriksaan mencakup keselarasan pedagogis, kejelasan pengalaman belajar, keterukuran tujuan, durasi waktu, serta keutuhan teks CP.'}
+                    </div>
+
+                    <!-- TABEL TEMUAN -->
+                    <div class="space-y-2">
+                      <div class="font-extrabold text-xs text-slate-900">Daftar Temuan (${review.findings ? review.findings.length : 0}):</div>
+                      ${!review.findings || review.findings.length === 0 ? `
+                        <div class="p-3 bg-white/80 rounded-xl text-emerald-800 text-xs font-semibold flex items-center gap-2">
+                          <i data-lucide="check" class="w-4 h-4 text-emerald-600"></i>
+                          <span>Tidak ditemukan ketidaksesuaian pada pemeriksaan deterministik maupun pedagogis ini.</span>
+                        </div>
+                      ` : `
+                        <div class="space-y-2 max-h-72 overflow-y-auto custom-scroll pr-1">
+                          ${review.findings.map(item => `
+                            <div class="p-3 bg-white rounded-xl border border-slate-200 text-xs space-y-1">
+                              <div class="flex items-center justify-between font-bold">
+                                <span class="text-slate-900">${item.bagian || 'Bagian Dokumen'}</span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold ${
+                                  item.tingkat === 'Perlu diperbaiki'
+                                    ? 'bg-rose-100 text-rose-800'
+                                    : 'bg-amber-100 text-amber-900'
+                                }">
+                                  ${item.tingkat}
+                                </span>
+                              </div>
+                              <div class="text-slate-700"><strong>Alasan:</strong> ${item.alasan}</div>
+                              <div class="text-blue-900 bg-blue-50/70 p-2 rounded-lg text-[11px]">
+                                <strong>Saran Perbaikan:</strong> ${item.saran}
+                              </div>
+                            </div>
+                          `).join('')}
+                        </div>
+                      `}
+                    </div>
                   </div>
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    <div><span class="text-slate-400 block text-[10px]">Satuan Pendidikan:</span> ${checkEmptyBadge(idn.school_name)}</div>
-                    <div><span class="text-slate-400 block text-[10px]">Mata Pelajaran / Kelas / Fase:</span> ${checkEmptyBadge([idn.subject_name, idn.grade_level, idn.phase].filter(Boolean).join(' • '))}</div>
-                    <div><span class="text-slate-400 block text-[10px]">Topik Materi:</span> ${checkEmptyBadge(idn.topic)}</div>
-                    <div><span class="text-slate-400 block text-[10px]">Total Waktu Terhitung:</span> <strong class="text-blue-900">${timeCalc.hoursText}</strong></div>
-                    <div><span class="text-slate-400 block text-[10px]">Status Verifikasi Referensi CP:</span> <strong class="${cp.verification_status === 'Terverifikasi' ? 'text-emerald-700' : 'text-amber-800'}">${cp.verification_status || 'Dimasukkan pengguna — belum diverifikasi'}</strong></div>
-                    <div><span class="text-slate-400 block text-[10px]">Domain Sumber CP:</span> ${urlCheck.valid ? `<span class="font-bold text-blue-800">${urlCheck.domain}</span>` : checkEmptyBadge('')}</div>
-                    <div class="sm:col-span-2"><span class="text-slate-400 block text-[10px]">Teks Referensi CP (Snapshot Utuh):</span> ${checkEmptyBadge(cp.cp_text)}</div>
+                ` : ''}
+
+                <!-- PREVIEW PERBAIKAN & RINGKASAN PERUBAHAN JIKA ADA USULAN PERBAIKAN -->
+                ${f.pending_repaired_rpm ? `
+                  <div class="p-5 rounded-2xl bg-amber-50 border-2 border-amber-300 space-y-3.5">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-2">
+                        <i data-lucide="git-commit" class="w-5 h-5 text-amber-700"></i>
+                        <h5 class="font-black text-amber-950 text-sm">Usulan Perbaikan Telah Siap Ditinjau</h5>
+                      </div>
+                      <span class="text-[10px] font-bold text-amber-800 bg-amber-200/80 px-2.5 py-0.5 rounded-full">
+                        Menunggu Tindakan Pengguna
+                      </span>
+                    </div>
+
+                    <div class="text-xs text-slate-700 leading-relaxed bg-white p-3 rounded-xl border border-amber-200">
+                      <strong>Ringkasan Perubahan:</strong>
+                      <p class="mt-1 whitespace-pre-line text-slate-600">${f.pending_diff_summary || 'Perbaikan telah diselaraskan dengan saran pemeriksa.'}</p>
+                    </div>
+
+                    <p class="text-[11px] text-amber-900 font-medium">
+                      Draf sebelumnya akan otomatis diarsipkan ke <strong>Riwayat Versi</strong>. Draf Anda tidak akan diganti sebelum Anda menekan tombol di bawah.
+                    </p>
+
+                    <div class="flex items-center gap-2 pt-1">
+                      <button type="button" onclick="window.app.applyPendingRepair()"
+                        class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md flex items-center gap-2 transition">
+                        <i data-lucide="check-check" class="w-4 h-4"></i>
+                        <span>Terapkan Perbaikan Sekarang</span>
+                      </button>
+                      <button type="button" onclick="window.app.cancelPendingRepair()"
+                        class="px-3.5 py-2.5 rounded-xl border border-slate-300 hover:bg-white text-slate-700 font-bold text-xs transition">
+                        Abaikan Usulan Ini
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ` : ''}
+
+                <!-- TAMPILAN DRAF RPM LENGKAP -->
+                ${genRpm ? `
+                  <div class="p-5 rounded-2xl bg-white border border-slate-200 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <div>
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700 bg-blue-50 px-2 py-0.5 rounded">Dokumen RPM</span>
+                        <h5 class="text-base font-extrabold text-slate-900 mt-1">${genRpm.identitas?.topik || idn.topic || 'Rencana Pembelajaran Mendalam'}</h5>
+                      </div>
+                      <button type="button" onclick="window.app.printCurrentRpm()"
+                        class="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-1.5">
+                        <i data-lucide="printer" class="w-4 h-4"></i> Cetak RPM
+                      </button>
+                    </div>
+
+                    <!-- BAGIAN TUJUAN -->
+                    <div class="space-y-2 text-xs">
+                      <div class="font-extrabold text-slate-900 flex items-center gap-2">
+                        <i data-lucide="target" class="w-4 h-4 text-blue-700"></i>
+                        <span>Tujuan Pembelajaran (Terukur & Teramati):</span>
+                      </div>
+                      <div class="space-y-1.5 pl-6">
+                        ${(genRpm.tujuan_pembelajaran || []).map(tp => `
+                          <div class="p-2.5 bg-slate-50 rounded-lg border border-slate-200/70">
+                            <strong>[${tp.id}]</strong> ${tp.deskripsi}
+                            <div class="text-[10px] text-slate-500 mt-0.5">Bukti Ketercapaian: ${tp.bukti_ketercapaian || '-'}</div>
+                          </div>
+                        `).join('')}
+                      </div>
+                    </div>
+
+                    <!-- BAGIAN KEGIATAN PER PERTEMUAN -->
+                    <div class="space-y-3 text-xs pt-2 border-t border-slate-100">
+                      <div class="font-extrabold text-slate-900 flex items-center gap-2">
+                        <i data-lucide="layers" class="w-4 h-4 text-emerald-700"></i>
+                        <span>Pengalaman Belajar (Memahami, Mengaplikasi, Merefleksi):</span>
+                      </div>
+                      <div class="space-y-3">
+                        ${(genRpm.kegiatan_pembelajaran || []).map(m => `
+                          <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                            <div class="flex items-center justify-between font-bold text-blue-900">
+                              <span>Pertemuan ${m.pertemuan_ke} • Terkait: ${(m.tujuan_id_terkait || []).join(', ')}</span>
+                              <span class="text-[11px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                                Durasi: ${(m.kegiatan_awal?.durasi_menit || 0) + (m.kegiatan_inti?.durasi_menit || 0) + (m.kegiatan_penutup?.durasi_menit || 0)} Menit
+                              </span>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-[11px]">
+                              <div class="p-2 bg-white rounded border border-slate-200">
+                                <div class="font-bold text-slate-800 mb-0.5">Awal (${m.kegiatan_awal?.durasi_menit || 0}m)</div>
+                                <p class="text-slate-600">${m.kegiatan_awal?.aktivitas || '-'}</p>
+                              </div>
+                              <div class="p-2 bg-white rounded border border-slate-200">
+                                <div class="font-bold text-slate-800 mb-0.5">Inti (${m.kegiatan_inti?.durasi_menit || 0}m)</div>
+                                <p class="text-slate-600">${m.kegiatan_inti?.aktivitas || '-'}</p>
+                              </div>
+                              <div class="p-2 bg-white rounded border border-slate-200">
+                                <div class="font-bold text-slate-800 mb-0.5">Penutup (${m.kegiatan_penutup?.durasi_menit || 0}m)</div>
+                                <p class="text-slate-600">${m.kegiatan_penutup?.aktivitas || '-'}</p>
+                              </div>
+                            </div>
+                          </div>
+                        `).join('')}
+                      </div>
+                    </div>
+
+                    <!-- BAGIAN ASESMEN & RUBRIK -->
+                    <div class="space-y-2 text-xs pt-2 border-t border-slate-100">
+                      <div class="font-extrabold text-slate-900 flex items-center gap-2">
+                        <i data-lucide="check-square" class="w-4 h-4 text-purple-700"></i>
+                        <span>Asesmen, Instrumen & Rubrik:</span>
+                      </div>
+                      <div class="space-y-2">
+                        ${(genRpm.asesmen?.teknik_dan_instrumen || []).map(a => `
+                          <div class="p-3 bg-purple-50/50 rounded-xl border border-purple-200/70 text-[11px] space-y-1">
+                            <div class="flex items-center justify-between font-bold text-purple-950">
+                              <span>${a.nama_asesmen} (${a.jenis})</span>
+                              <span>Target: ${(a.tujuan_id_terkait || []).join(', ')}</span>
+                            </div>
+                            <div><strong>Instrumen:</strong> ${a.instrumen || '-'}</div>
+                            <div><strong>Rubrik:</strong> ${a.rubrik_penilaian || '-'}</div>
+                          </div>
+                        `).join('')}
+                      </div>
+                    </div>
+                  </div>
+                ` : ''}
               </div>
 
+              <!-- NAVIGASI BAWAH -->
               <div class="pt-5 mt-5 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   ${step > 1 ? `
@@ -1466,7 +1798,7 @@
                     <button type="button" onclick="window.app.finishRpmInputStage()"
                       class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md flex items-center gap-1.5 transition">
                       <i data-lucide="check-circle" class="w-4 h-4"></i>
-                      <span>Lanjutkan (Selesai Input)</span>
+                      <span>Simpan & Selesai</span>
                     </button>
                   `}
                 </div>
@@ -1474,7 +1806,9 @@
             </form>
           </div>
 
+          <!-- SIDEBAR DRAF & RIWAYAT VERSI RPM -->
           <div class="lg:col-span-4 space-y-4">
+            <!-- DRAF TERSIMPAN -->
             <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-3">
               <div class="flex items-center justify-between">
                 <h4 class="font-extrabold text-sm text-slate-900 flex items-center gap-2">
@@ -1482,59 +1816,84 @@
                   <span>Draf RPM Tersimpan (${state.rpm_drafts.length})</span>
                 </h4>
               </div>
-              <p class="text-[11px] text-slate-500 leading-relaxed">
-                Klik salah satu draf di bawah untuk memuat kembali isian ke dalam formulir dan melanjutkan pengeditan.
-              </p>
 
               ${state.rpm_drafts.length === 0 ? `
-                <div class="py-8 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                <div class="py-6 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
                   Belum ada draf RPM yang disimpan.
                 </div>
               ` : `
-                <div class="space-y-2.5 max-h-96 overflow-y-auto custom-scroll pr-1">
+                <div class="space-y-2.5 max-h-72 overflow-y-auto custom-scroll pr-1">
                   ${state.rpm_drafts.map(d => {
                     const fd = d.form_data || {};
                     const idnD = fd.identitas || {};
-                    const snapD = d.cp_snapshot || fd.referensi_cp?.cp_snapshot || {};
-                    const calcD = calculateRpmTime(idnD.jp_total, idnD.minutes_per_jp, idnD.meeting_count);
                     const isSelected = state.rpmCurrentForm?.id === d.id;
-                    const snapUrlInfo = parseAndValidateSourceUrl(snapD.urlSumber);
+                    const rev = d.review_results;
                     return `
-                      <div class="p-3.5 rounded-xl border transition ${isSelected ? 'bg-blue-50/70 border-blue-400' : 'bg-slate-50 border-slate-200/70 hover:border-slate-300'} text-xs space-y-2">
+                      <div class="p-3.5 rounded-xl border transition ${isSelected ? 'bg-blue-50/70 border-blue-400' : 'bg-slate-50 border-slate-200/70'} text-xs space-y-1.5">
                         <div class="flex items-start justify-between gap-2">
-                          <div>
+                          <div class="truncate">
                             <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-900 font-extrabold text-[10px]">
-                              ${d.subject_name || 'Mapel Belum Diisi'} • ${d.grade_level ? 'Kelas ' + d.grade_level : 'Kelas -'}
+                              ${d.subject_name || 'Mapel -'} • Kelas ${d.grade_level || '-'}
                             </span>
-                            <h5 class="font-extrabold text-slate-900 mt-1">${d.topic || '(Topik Belum Diisi)'}</h5>
+                            <h5 class="font-extrabold text-slate-900 mt-1 truncate">${d.topic || '(Topik Belum Diisi)'}</h5>
                           </div>
-                          <button type="button" onclick="window.app.deleteRpmDraft('${d.id}')" class="text-rose-500 hover:text-rose-700 p-1" title="Hapus Draf">
+                          <button type="button" onclick="window.app.deleteRpmDraft('${d.id}')" class="text-rose-500 hover:text-rose-700 p-1">
                             <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                           </button>
                         </div>
-                        <div class="text-[10px] flex flex-wrap items-center gap-1.5">
-                          <span class="px-2 py-0.5 rounded font-bold ${snapD.statusVerifikasi === 'Terverifikasi' ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-900'}">
-                            CP: ${snapD.statusVerifikasi || 'Belum diverifikasi'}
-                          </span>
-                          ${snapUrlInfo.valid ? `
-                            <a href="${snapUrlInfo.url}" target="_blank" rel="noopener noreferrer" class="px-2 py-0.5 rounded bg-white border border-slate-200 text-blue-700 font-bold hover:underline inline-flex items-center gap-1">
-                              <i data-lucide="external-link" class="w-2.5 h-2.5"></i> Sumber (${snapUrlInfo.domain})
-                            </a>
-                          ` : ''}
-                        </div>
-                        <div class="text-[11px] text-slate-500 flex items-center justify-between">
-                          <span>Waktu: <strong>${calcD.valid ? calcD.totalMinutes + ' Menit' : 'Belum dihitung'}</strong></span>
-                          <span>Tahap ${d.current_step || 1}/5</span>
-                        </div>
-                        <div class="pt-1 flex items-center gap-2">
-                          <button type="button" onclick="window.app.loadRpmDraft('${d.id}')"
-                            class="w-full py-1.5 px-3 rounded-lg bg-white hover:bg-blue-600 hover:text-white text-blue-800 border border-blue-200 font-bold text-[11px] transition">
-                            Buka & Edit Draf (Snapshot CP Utuh)
-                          </button>
-                        </div>
+                        ${rev?.status ? `
+                          <div class="text-[10px] font-bold ${
+                            rev.status === 'Tidak ditemukan masalah pada pemeriksaan ini'
+                              ? 'text-emerald-700'
+                              : rev.status === 'Perlu diperbaiki'
+                                ? 'text-rose-700'
+                                : 'text-amber-800'
+                          }">
+                            Status Audit: ${rev.status}
+                          </div>
+                        ` : ''}
+                        <button type="button" onclick="window.app.loadRpmDraft('${d.id}')"
+                          class="w-full py-1.5 px-3 rounded-lg bg-white hover:bg-blue-600 hover:text-white text-blue-800 border border-blue-200 font-bold text-[11px] transition">
+                          Buka Draf
+                        </button>
                       </div>
                     `;
                   }).join('')}
+                </div>
+              `}
+            </div>
+
+            <!-- RIWAYAT VERSI ARSIP -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-3">
+              <div class="flex items-center justify-between">
+                <h4 class="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                  <i data-lucide="history" class="w-4 h-4 text-amber-600"></i>
+                  <span>Riwayat Versi Terarsip</span>
+                </h4>
+              </div>
+              <p class="text-[11px] text-slate-500 leading-relaxed">
+                Setiap kali tindakan perbaikan disetujui, versi sebelumnya diamankan di sini agar dapat dipulihkan kapan saja.
+              </p>
+
+              ${state.rpm_versions.length === 0 ? `
+                <div class="py-4 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  Belum ada riwayat perbaikan versi.
+                </div>
+              ` : `
+                <div class="space-y-2 max-h-56 overflow-y-auto custom-scroll pr-1">
+                  ${state.rpm_versions.map(v => `
+                    <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+                      <div class="flex items-center justify-between font-bold text-slate-800">
+                        <span>Versi #${v.version_number}</span>
+                        <span class="text-[10px] text-slate-400">${new Date(v.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      <p class="text-[11px] text-slate-600">${v.description || 'Arsip versi sebelum perbaikan.'}</p>
+                      <button type="button" onclick="window.app.restoreVersion('${v.id}')"
+                        class="text-[11px] text-blue-700 hover:underline font-bold">
+                        Pulihkan Versi Ini
+                      </button>
+                    </div>
+                  `).join('')}
                 </div>
               `}
             </div>
@@ -1559,10 +1918,6 @@
             <select onchange="window.app.selectClass(this.value)" class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50">
               ${state.classes.map(c => `<option value="${c.id}" ${c.id === classId ? 'selected' : ''}>${c.class_name}</option>`).join('')}
             </select>
-            <button onclick="window.app.openJournalModal('${classId}')" class="px-4 py-2.5 rounded-xl bg-[#072B7A] hover:bg-blue-800 text-white font-bold text-xs shadow-md flex items-center gap-1.5">
-              <i data-lucide="plus" class="w-4 h-4"></i>
-              <span>Input Jurnal & Presensi</span>
-            </button>
           </div>
         </div>
 
@@ -1587,9 +1942,6 @@
                   <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/60 text-xs space-y-1">
                     <div class="flex items-center justify-between font-bold text-blue-900">
                       <span>Pertemuan Ke-${j.meeting_no} • ${j.teaching_date}</span>
-                      <button onclick="window.app.deleteJournal('${j.id}')" class="text-rose-500 hover:text-rose-700">
-                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                      </button>
                     </div>
                     <div class="font-extrabold text-slate-800">${j.topic}</div>
                     <p class="text-slate-600">${j.activities_notes || '-'}</p>
@@ -1608,150 +1960,45 @@
           <div>
             <span class="text-[11px] font-extrabold uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full">Bank Asesmen Guru</span>
             <h3 class="text-lg font-extrabold text-slate-900 mt-1">Paket Soal, Rubrik & Kunci Jawaban</h3>
-            <p class="text-xs text-slate-500">Arsip pribadi guru untuk menyimpan kisi-kisi, naskah soal, rubrik penskoran, dan kunci jawaban.</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <button onclick="window.app.openAssessmentModal()" class="px-4 py-2.5 rounded-xl bg-[#072B7A] hover:bg-blue-800 text-white font-bold text-xs shadow-md flex items-center gap-1.5">
-              <i data-lucide="plus" class="w-4 h-4"></i>
-              <span>Tambah Paket Asesmen</span>
-            </button>
+            <p class="text-xs text-slate-500">Arsip kisi-kisi dan instrumen asesmen yang selaras dengan Tujuan Pembelajaran.</p>
           </div>
         </div>
 
         ${state.assessments.length === 0 ? `
           <div class="bg-white rounded-2xl border border-slate-200/80 p-12 text-center text-xs text-slate-400">
-            Belum ada paket asesmen tersimpan. Klik <strong>Tambah Paket Asesmen</strong> untuk membuat baru.
+            Belum ada paket asesmen tersimpan.
           </div>
         ` : `
           <div class="space-y-4">
-            ${state.assessments.map(asm => {
-              const qList = Array.isArray(asm.questions_data) ? asm.questions_data : [];
-              return `
-                <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-3">
-                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                    <div>
-                      <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-100 text-purple-900">${asm.assessment_type} • KKTP: ${asm.kkm_target}</span>
-                      <h4 class="font-extrabold text-base text-slate-900 mt-1">${asm.title}</h4>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <button onclick="window.app.openQuestionModal('${asm.id}')" class="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs">
-                        + Tambah Butir Soal
-                      </button>
-                      <button onclick="window.app.deleteAssessment('${asm.id}')" class="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                      </button>
-                    </div>
-                  </div>
-                  <div class="space-y-2 text-xs">
-                    ${qList.length === 0 ? `<div class="text-slate-400 py-3 text-center">Belum ada butir soal.</div>` : qList.map((q, idx) => `
-                      <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/60 space-y-1">
-                        <div class="font-bold text-blue-900 flex justify-between">
-                          <span>Butir Soal #${idx + 1} (${q.type || 'Soal'})</span>
-                          <span class="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md font-extrabold">Kunci: ${q.answer_key || '-'}</span>
-                        </div>
-                        <div class="text-slate-800 font-semibold">${q.question}</div>
-                        ${q.options && q.options.length ? `
-                          <div class="pl-3 text-slate-600">${q.options.join(' • ')}</div>
-                        ` : ''}
-                      </div>
-                    `).join('')}
-                  </div>
+            ${state.assessments.map(asm => `
+              <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <h4 class="font-extrabold text-base text-slate-900">${asm.title}</h4>
+                  <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-100 text-purple-900">KKTP: ${asm.kkm_target}</span>
                 </div>
-              `;
-            }).join('')}
+              </div>
+            `).join('')}
           </div>
         `}
       `;
     }
 
     function renderNilai() {
-      const asm = state.assessments.find(a => a.id === state.selectedAssessmentId) || state.assessments[0];
-      const students = state.students;
-
       return `
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
-          <div>
-            <span class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full">Olah Nilai & KKTP</span>
-            <h3 class="text-lg font-extrabold text-slate-900 mt-1">Rekapitulasi Nilai & Tindak Lanjut Remedial</h3>
-          </div>
-          <div class="flex items-center gap-2">
-            <select onchange="window.app.selectAssessment(this.value)" class="px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50">
-              ${state.assessments.map(a => `<option value="${a.id}" ${a.id === asm?.id ? 'selected' : ''}>${a.title}</option>`).join('')}
-            </select>
-          </div>
-        </div>
-
-        <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm overflow-x-auto">
-          ${!asm || students.length === 0 ? `<div class="text-xs text-slate-400 py-6 text-center">Belum ada paket asesmen atau data siswa.</div>` : `
-            <table class="w-full text-left text-xs">
-              <thead>
-                <tr class="border-b border-slate-200 text-slate-400 font-bold uppercase text-[10px]">
-                  <th class="pb-3">No</th>
-                  <th class="pb-3">Nama Siswa</th>
-                  <th class="pb-3">Nilai Awal</th>
-                  <th class="pb-3">Remedial</th>
-                  <th class="pb-3">Nilai Akhir</th>
-                  <th class="pb-3">Status KKTP (${asm.kkm_target})</th>
-                  <th class="pb-3 text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100">
-                ${students.map((s, idx) => {
-                  const g = state.grades.find(gr => gr.assessment_id === asm.id && gr.student_id === s.id);
-                  const raw = g ? g.raw_score : '-';
-                  const rem = g && g.remedial_score !== null && g.remedial_score !== undefined ? g.remedial_score : '-';
-                  const fin = g ? g.final_score : '-';
-                  const needsRem = g ? g.needs_remedial : false;
-                  return `
-                    <tr>
-                      <td class="py-3 font-bold text-slate-500">${idx + 1}</td>
-                      <td class="py-3 font-extrabold text-slate-900">${s.full_name}</td>
-                      <td class="py-3 font-bold">${raw}</td>
-                      <td class="py-3 font-bold text-amber-600">${rem}</td>
-                      <td class="py-3 font-black text-blue-900">${fin}</td>
-                      <td class="py-3">
-                        ${!g ? `<span class="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-bold">Belum Diinput</span>`
-                          : needsRem
-                            ? `<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-bold">Perlu Remedial</span>`
-                            : `<span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold">Tuntas</span>`
-                        }
-                      </td>
-                      <td class="py-3 text-right">
-                        <button onclick="window.app.openGradeModal('${asm.id}', '${s.id}')" class="px-3 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px]">
-                          Input Nilai
-                        </button>
-                      </td>
-                    </tr>
-                  `;
-                }).join('')}
-              </tbody>
-            </table>
-          `}
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm text-center py-12">
+          <i data-lucide="bar-chart-3" class="w-10 h-10 text-slate-400 mx-auto mb-2"></i>
+          <h4 class="font-extrabold text-slate-800 text-sm">Rekapitulasi Nilai & KKTP</h4>
+          <p class="text-xs text-slate-500 mt-1">Kelola rekap nilai siswa dan tindak lanjut remedial setelah asesmen selesai dilaksanakan.</p>
         </div>
       `;
     }
 
     function renderWaliKelas() {
       return `
-        <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-4">
-          <div class="flex items-center justify-between">
-            <div>
-              <span class="text-[11px] font-extrabold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full">Wali Kelas</span>
-              <h3 class="text-lg font-extrabold text-slate-900 mt-1">Catatan Pembinaan & Portofolio Guru</h3>
-            </div>
-            <button onclick="window.app.openHomeroomModal()" class="px-4 py-2.5 rounded-xl bg-[#072B7A] text-white font-bold text-xs">
-              + Catatan Baru
-            </button>
-          </div>
-          <div class="space-y-3">
-            ${state.homeroom_records.length === 0 ? `<div class="text-xs text-slate-400 py-6 text-center">Belum ada catatan pembinaan.</div>` : state.homeroom_records.map(h => `
-              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/60 text-xs space-y-1">
-                <div class="font-extrabold text-slate-900">${h.category} • ${h.record_date}</div>
-                <p class="text-slate-700">${h.details}</p>
-                <div class="text-[11px] text-blue-800 italic">Pesan Ortu: ${h.parent_contact_note || '-'}</div>
-              </div>
-            `).join('')}
-          </div>
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm text-center py-12">
+          <i data-lucide="folder-kanban" class="w-10 h-10 text-slate-400 mx-auto mb-2"></i>
+          <h4 class="font-extrabold text-slate-800 text-sm">Catatan Pembinaan Wali Kelas</h4>
+          <p class="text-xs text-slate-500 mt-1">Arsip bimbingan dan komunikasi orang tua peserta didik.</p>
         </div>
       `;
     }
@@ -1759,44 +2006,27 @@
     function renderMaster() {
       const t = state.teacher || {};
       return `
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <div class="lg:col-span-6 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4">
-            <h4 class="font-extrabold text-sm text-slate-900">Profil & Identitas Guru</h4>
-            <form onsubmit="window.app.saveProfile(event)" class="space-y-3 text-xs">
-              <div>
-                <label class="font-bold block mb-1">Nama Guru</label>
-                <input name="full_name" required value="${t.full_name || ''}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
-              </div>
-              <div>
-                <label class="font-bold block mb-1">Mata Pelajaran</label>
-                <input name="subject_name" required value="${t.subject_name || ''}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
-              </div>
-              <div>
-                <label class="font-bold block mb-1">Nama Sekolah</label>
-                <input name="school_name" required value="${t.school_name || ''}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
-              </div>
-              <div>
-                <label class="font-bold block mb-1">Tahun Ajaran</label>
-                <input name="academic_year" required value="${t.academic_year || ''}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
-              </div>
-              <button type="submit" class="w-full py-2.5 rounded-xl bg-[#072B7A] text-white font-bold">Simpan Profil</button>
-            </form>
-          </div>
-
-          <div class="lg:col-span-6 bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-4">
-            <div class="flex items-center justify-between">
-              <h4 class="font-extrabold text-sm text-slate-900">Daftar Kelas & Siswa</h4>
-              <button onclick="window.app.openClassModal()" class="px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-extrabold text-xs">+ Kelas</button>
+        <div class="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm max-w-xl mx-auto space-y-4 text-xs">
+          <h4 class="font-extrabold text-sm text-slate-900">Profil Guru & Konfigurasi</h4>
+          <form onsubmit="window.app.saveProfile(event)" class="space-y-3">
+            <div>
+              <label class="font-bold block mb-1">Nama Guru</label>
+              <input name="full_name" required value="${t.full_name || ''}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
             </div>
-            <div class="space-y-2">
-              ${state.classes.map(c => `
-                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200/60 flex justify-between text-xs">
-                  <span class="font-bold">${c.class_name} (${c.schedule_day})</span>
-                  <button onclick="window.app.deleteClass('${c.id}')" class="text-rose-600">Hapus</button>
-                </div>
-              `).join('')}
+            <div>
+              <label class="font-bold block mb-1">Mata Pelajaran</label>
+              <input name="subject_name" required value="${t.subject_name || ''}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
             </div>
-          </div>
+            <div>
+              <label class="font-bold block mb-1">Nama Sekolah</label>
+              <input name="school_name" required value="${t.school_name || ''}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+            </div>
+            <div>
+              <label class="font-bold block mb-1">API Key Gemini AI</label>
+              <input name="gemini_api_key" type="password" value="${getGeminiApiKey()}" placeholder="AIzaSy..." class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-[#072B7A] text-white font-bold">Simpan Profil & Kunci API</button>
+          </form>
         </div>
       `;
     }
@@ -1817,17 +2047,15 @@
       lucide.createIcons();
     }
 
+    // =========================================================================
+    // WINDOW.APP INTERAKSI LENGKAP & LOGIKA PEMERIKSAAN BERLAPIS
+    // =========================================================================
     window.app = {
       switchTab,
       closeModal,
 
       selectClass(classId) {
         state.selectedClassId = classId;
-        renderActiveModule();
-      },
-
-      selectAssessment(asmId) {
-        state.selectedAssessmentId = asmId;
         renderActiveModule();
       },
 
@@ -1843,6 +2071,39 @@
             `).join('')}
           </div>
         `);
+      },
+
+      openApiKeyModal() {
+        const curKey = getGeminiApiKey();
+        openModal('Konfigurasi Kunci API AI (Gemini)', `
+          <div class="space-y-3.5 text-xs">
+            <p class="text-slate-600 leading-relaxed">
+              Kunci API digunakan untuk pemrosesan <strong>AI Generator RPM</strong> dan <strong>AI Pemeriksa Independen</strong>. Kunci disimpan dengan aman di memori akun browser Anda.
+            </p>
+            <div>
+              <label class="font-bold text-slate-800 block mb-1">Google Gemini API Key</label>
+              <input type="password" id="modal-gemini-key" value="${curKey}" placeholder="Masukkan AIzaSy..."
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-blue-600" />
+            </div>
+            <div class="pt-2 flex items-center justify-end gap-2">
+              <button type="button" onclick="window.app.closeModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-bold">Batal</button>
+              <button type="button" onclick="window.app.saveApiKeyFromModal()" class="px-4 py-2 rounded-xl bg-[#072B7A] text-white font-bold">Simpan Kunci API</button>
+            </div>
+          </div>
+        `);
+      },
+
+      async saveApiKeyFromModal() {
+        const keyVal = (document.getElementById('modal-gemini-key')?.value || '').trim();
+        localStorage.setItem(GEMINI_API_KEY_LOCAL, keyVal);
+        if (state.teacher) state.teacher.gemini_api_key = keyVal;
+
+        if (!IS_PREVIEW && supabase && state.user) {
+          await supabase.from('teachers').update({ gemini_api_key: keyVal }).eq('id', state.user.id);
+        }
+        closeModal();
+        renderActiveModule();
+        showToast('Kunci API AI berhasil disimpan.');
       },
 
       buildCpSnapshot(cpObj) {
@@ -1928,8 +2189,7 @@
         state.rpmCurrentForm.preferensi = {
           ...prevPref,
           initial_tp: getVal('rpm-initial_tp', prevPref.initial_tp),
-          learning_strategy: getVal('rpm-learning_strategy', prevPref.learning_strategy),
-          special_notes: getVal('rpm-special_notes', prevPref.special_notes)
+          learning_strategy: getVal('rpm-learning_strategy', prevPref.learning_strategy)
         };
 
         const calc = calculateRpmTime(
@@ -1941,21 +2201,6 @@
         const meetEl = document.getElementById('rpm-calc-per-meeting');
         if (totalEl) totalEl.textContent = calc.hoursText;
         if (meetEl) meetEl.textContent = calc.perMeetingText;
-
-        const urlLabelEl = document.getElementById('rpm-url-domain-label');
-        const btnOpenUrl = document.getElementById('btn-open-official-url');
-        if (urlLabelEl || btnOpenUrl) {
-          const urlInfo = parseAndValidateSourceUrl(state.rpmCurrentForm.referensi_cp.official_url);
-          if (urlLabelEl) urlLabelEl.textContent = urlInfo.message;
-          if (btnOpenUrl) {
-            btnOpenUrl.disabled = !urlInfo.valid;
-            btnOpenUrl.className = `px-4 py-2.5 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 shrink-0 transition ${
-              urlInfo.valid
-                ? 'bg-[#072B7A] hover:bg-blue-800 text-white shadow-sm cursor-pointer'
-                : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
-            }`;
-          }
-        }
       },
 
       refreshRpmView() {
@@ -1968,7 +2213,6 @@
         if (mode === 'manual') {
           state.rpmCurrentForm.referensi_cp.selected_catalog_id = '';
           state.rpmCurrentForm.referensi_cp.verification_status = 'Dimasukkan pengguna — belum diverifikasi';
-          state.rpmCurrentForm.referensi_cp.verification_date = '';
         }
         state.rpmCurrentForm.referensi_cp.cp_snapshot = this.buildCpSnapshot(state.rpmCurrentForm.referensi_cp);
         renderActiveModule();
@@ -1978,7 +2222,6 @@
         this.syncRpmInputs();
         state.rpmCurrentForm.referensi_cp.selected_catalog_id = '';
         state.rpmCurrentForm.referensi_cp.verification_status = 'Dimasukkan pengguna — belum diverifikasi';
-        state.rpmCurrentForm.referensi_cp.verification_date = '';
         state.rpmCurrentForm.referensi_cp.cp_snapshot = this.buildCpSnapshot(state.rpmCurrentForm.referensi_cp);
       },
 
@@ -2006,126 +2249,7 @@
         };
         state.rpmCurrentForm.referensi_cp.cp_snapshot = this.buildCpSnapshot(state.rpmCurrentForm.referensi_cp);
         renderActiveModule();
-        showToast('Referensi CP terverifikasi dipilih dan disalin sebagai snapshot utuh.');
-      },
-
-      openCurrentCpSourceUrl() {
-        this.syncRpmInputs();
-        const rawUrl = state.rpmCurrentForm?.referensi_cp?.official_url || '';
-        const check = parseAndValidateSourceUrl(rawUrl);
-        if (!check.valid) {
-          showToast(check.message, 'warning');
-          return;
-        }
-        window.open(check.url, '_blank', 'noopener,noreferrer');
-      },
-
-      openCpCatalogAdminModal() {
-        if (!state.teacher?.is_catalog_admin) {
-          showToast('Akses ditolak: Pengelolaan katalog CP hanya untuk Admin Katalog.', 'error');
-          return;
-        }
-        openModal('Kelola Katalog Referensi CP (Khusus Admin)', `
-          <form onsubmit="window.app.saveCpCatalogEntry(event)" class="space-y-3 text-xs">
-            <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] leading-relaxed">
-              <strong>Ketentuan Integritas Katalog:</strong> Jangan memasukkan teks CP karangan, nomor keputusan fiktif, atau tautan yang tidak benar-benar tersedia pada dokumen resmi.
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              <div>
-                <label class="font-bold block mb-1">Mata Pelajaran</label>
-                <input name="mataPelajaran" required placeholder="Contoh: Informatika" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
-              </div>
-              <div>
-                <label class="font-bold block mb-1">Fase</label>
-                <select name="fase" required class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white">
-                  <option value="Fase A">Fase A</option>
-                  <option value="Fase B">Fase B</option>
-                  <option value="Fase C">Fase C</option>
-                  <option value="Fase D" selected>Fase D</option>
-                  <option value="Fase E">Fase E</option>
-                  <option value="Fase F">Fase F</option>
-                </select>
-              </div>
-              <div>
-                <label class="font-bold block mb-1">Elemen CP</label>
-                <input name="elemen" placeholder="Contoh: Berpikir Komputasional" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
-              </div>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              <div>
-                <label class="font-bold block mb-1">Judul Dokumen Resmi</label>
-                <input name="judulDokumen" required placeholder="Keputusan Kepala BSKAP..." class="w-full px-3 py-2 rounded-xl border border-slate-200" />
-              </div>
-              <div>
-                <label class="font-bold block mb-1">Nomor Dokumen</label>
-                <input name="nomorDokumen" required placeholder="Nomor SK / Keputusan" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
-              </div>
-              <div>
-                <label class="font-bold block mb-1">Tahun Dokumen</label>
-                <input name="tahunDokumen" required placeholder="2024" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
-              </div>
-            </div>
-            <div>
-              <label class="font-bold block mb-1">URL Sumber Resmi (http/https)</label>
-              <input type="url" name="urlSumber" required placeholder="https://kurikulum.kemendikdasmen.go.id/..." class="w-full px-3 py-2 rounded-xl border border-slate-200" />
-            </div>
-            <div>
-              <label class="font-bold block mb-1">Teks Capaian Pembelajaran (CP) Sesuai Dokumen Asli</label>
-              <textarea name="teksCP" rows="4" required class="w-full p-2.5 rounded-xl border border-slate-200"></textarea>
-            </div>
-            <button type="submit" class="w-full py-2.5 rounded-xl bg-[#072B7A] text-white font-bold">Verifikasi & Simpan ke Katalog CP</button>
-          </form>
-        `);
-      },
-
-      async saveCpCatalogEntry(e) {
-        e.preventDefault();
-        if (!state.teacher?.is_catalog_admin) {
-          showToast('Anda tidak memiliki hak akses pengelolaan katalog.', 'error');
-          return;
-        }
-        const fd = new FormData(e.target);
-        const urlCheck = parseAndValidateSourceUrl(fd.get('urlSumber'));
-        if (!urlCheck.valid) {
-          showToast(urlCheck.message, 'error');
-          return;
-        }
-
-        const entry = {
-          id: crypto.randomUUID(),
-          mataPelajaran: String(fd.get('mataPelajaran') || '').trim(),
-          fase: String(fd.get('fase') || '').trim(),
-          elemen: String(fd.get('elemen') || '').trim(),
-          teksCP: String(fd.get('teksCP') || '').trim(),
-          judulDokumen: String(fd.get('judulDokumen') || '').trim(),
-          nomorDokumen: String(fd.get('nomorDokumen') || '').trim(),
-          tahunDokumen: String(fd.get('tahunDokumen') || '').trim(),
-          urlSumber: urlCheck.url,
-          statusVerifikasi: 'Terverifikasi',
-          tanggalVerifikasi: new Date().toISOString().slice(0, 10),
-          statusAktif: true
-        };
-
-        state.cp_catalog.unshift(entry);
-        if (IS_PREVIEW) {
-          saveLocalState();
-          closeModal();
-          renderActiveModule();
-          showToast('Entri katalog CP berhasil diverifikasi & disimpan.');
-        } else {
-          try {
-            const { error } = await supabase.from('cp_catalog').insert({
-              ...entry,
-              created_by: state.user?.id
-            });
-            if (error) throw error;
-            closeModal();
-            renderActiveModule();
-            showToast('Entri katalog CP tersimpan di database Supabase!');
-          } catch (err) {
-            showToast('Gagal menyimpan ke katalog: ' + err.message, 'error');
-          }
-        }
+        showToast('Referensi CP terverifikasi dipilih dan dikunci sebagai snapshot.');
       },
 
       goToRpmStep(stepNumber) {
@@ -2162,7 +2286,7 @@
           state.rpmCurrentForm.referensi_cp.subject_name = t.subject_name || '';
         }
         renderActiveModule();
-        showToast('Identitas diisi dari Profil Guru. Silakan periksa kembali.');
+        showToast('Identitas diisi dari profil guru.');
       },
 
       resetRpmForm() {
@@ -2178,13 +2302,6 @@
         const draftId = f.id || crypto.randomUUID();
         f.id = draftId;
 
-        if (f.referensi_cp?.official_url) {
-          const check = parseAndValidateSourceUrl(f.referensi_cp.official_url);
-          if (!check.valid) {
-            showToast(check.message, 'warning');
-          }
-        }
-
         const cpSnapshot = this.buildCpSnapshot(f.referensi_cp || {});
         f.referensi_cp.cp_snapshot = cpSnapshot;
 
@@ -2198,6 +2315,8 @@
           current_step: state.rpmActiveStep || 1,
           form_data: structuredClone(f),
           cp_snapshot: structuredClone(cpSnapshot),
+          generated_rpm: structuredClone(f.generated_rpm || null),
+          review_results: structuredClone(f.review_results || null),
           updated_at: new Date().toISOString()
         };
 
@@ -2208,29 +2327,12 @@
           state.rpm_drafts.unshift(record);
         }
 
-        if (IS_PREVIEW) {
-          saveLocalState();
-          renderActiveModule();
-          showToast('Draf RPM beserta snapshot utuh CP berhasil disimpan!');
-        } else {
-          try {
-            const { error } = await supabase.from('rpm_drafts').upsert(record);
-            if (error) {
-              localStorage.setItem('ASGURU_RPM_DRAFTS_FALLBACK', JSON.stringify(state.rpm_drafts));
-              saveLocalState();
-              renderActiveModule();
-              showToast('Draf & snapshot CP disimpan ke lokal sementara.', 'warning');
-              return;
-            }
-            saveLocalState();
-            renderActiveModule();
-            showToast('Draf RPM beserta snapshot utuh CP disimpan ke database!');
-          } catch (err) {
-            localStorage.setItem('ASGURU_RPM_DRAFTS_FALLBACK', JSON.stringify(state.rpm_drafts));
-            renderActiveModule();
-            showToast('Draf disimpan di memori lokal browser.', 'info');
-          }
+        saveLocalState();
+        if (!IS_PREVIEW && supabase) {
+          await supabase.from('rpm_drafts').upsert(record);
         }
+        renderActiveModule();
+        showToast('Draf RPM tersimpan.');
       },
 
       loadRpmDraft(draftId) {
@@ -2238,52 +2340,578 @@
         if (!found) return;
         const loadedForm = structuredClone(found.form_data || createEmptyRpmForm());
         loadedForm.id = found.id;
-
-        const snap = found.cp_snapshot || loadedForm.referensi_cp?.cp_snapshot;
-        if (snap) {
-          loadedForm.referensi_cp = {
-            ...loadedForm.referensi_cp,
-            subject_name: snap.mataPelajaran || loadedForm.referensi_cp?.subject_name || '',
-            phase: snap.fase || loadedForm.referensi_cp?.phase || '',
-            cp_element: snap.elemen || loadedForm.referensi_cp?.cp_element || '',
-            cp_text: snap.teksCP || loadedForm.referensi_cp?.cp_text || '',
-            source_title: snap.judulDokumen || loadedForm.referensi_cp?.source_title || '',
-            doc_number: snap.nomorDokumen || loadedForm.referensi_cp?.doc_number || '',
-            doc_year: snap.tahunDokumen || loadedForm.referensi_cp?.doc_year || '',
-            official_url: snap.urlSumber || loadedForm.referensi_cp?.official_url || '',
-            verification_status: snap.statusVerifikasi || 'Dimasukkan pengguna — belum diverifikasi',
-            verification_date: snap.tanggalVerifikasi || '',
-            cp_snapshot: structuredClone(snap)
-          };
-        }
+        loadedForm.generated_rpm = found.generated_rpm || loadedForm.generated_rpm || null;
+        loadedForm.review_results = found.review_results || loadedForm.review_results || null;
 
         state.rpmCurrentForm = loadedForm;
         state.rpmActiveStep = found.current_step || 1;
         renderActiveModule();
-        showToast('Draf RPM beserta snapshot CP utuh berhasil dimuat.');
+        showToast('Draf RPM dimuat.');
       },
 
       deleteRpmDraft(draftId) {
-        askConfirm('Hapus Draf RPM?', 'Draf Rencana Pembelajaran Mendalam ini akan dihapus.', async () => {
+        askConfirm('Hapus Draf RPM?', 'Draf Rencana Pembelajaran Mendalam ini akan dihapus secara permanen.', async () => {
           state.rpm_drafts = state.rpm_drafts.filter(d => d.id !== draftId);
           if (state.rpmCurrentForm?.id === draftId) {
             state.rpmCurrentForm = createEmptyRpmForm();
             state.rpmActiveStep = 1;
           }
-          if (IS_PREVIEW) {
-            saveLocalState();
-          } else {
+          saveLocalState();
+          if (!IS_PREVIEW && supabase) {
             await supabase.from('rpm_drafts').delete().eq('id', draftId);
-            localStorage.setItem('ASGURU_RPM_DRAFTS_FALLBACK', JSON.stringify(state.rpm_drafts));
           }
           renderActiveModule();
           showToast('Draf RPM dihapus.');
         });
       },
 
-      async finishRpmInputStage() {
+      // =======================================================================
+      // STEP 1: GENERASI RPM OLEH AI GENERATOR
+      // =======================================================================
+      async generateRpmWithAi() {
+        this.syncRpmInputs();
+        const f = state.rpmCurrentForm;
+        const apiKey = getGeminiApiKey();
+
+        if (!apiKey) {
+          this.openApiKeyModal();
+          showToast('Masukkan Kunci API Gemini terlebih dahulu.', 'warning');
+          return;
+        }
+
+        const snapshotCp = f.referensi_cp?.cp_snapshot || this.buildCpSnapshot(f.referensi_cp || {});
+        if (!snapshotCp.teksCP) {
+          showToast('Teks Capaian Pembelajaran (CP) harus diisi pada Kelompok 4!', 'warning');
+          this.goToRpmStep(4);
+          return;
+        }
+
+        const timeCalc = calculateRpmTime(f.identitas.jp_total, f.identitas.minutes_per_jp, f.identitas.meeting_count);
+        if (!timeCalc.valid || !timeCalc.expectedPerMeetingMinutes) {
+          showToast('Alokasi waktu dan jumlah pertemuan harus diisi lengkap di Kelompok 1!', 'warning');
+          this.goToRpmStep(1);
+          return;
+        }
+
+        state.isGeneratingRpm = true;
+        renderActiveModule();
+
+        const generatorSystemPrompt = `
+Anda adalah AI Perancang Rencana Pembelajaran Mendalam (RPM) profesional Kurikulum Nasional Indonesia.
+Tugas Anda merancang draf RPM lengkap, berkesadaran, bermakna, dan menggembirakan sesuai konteks input guru.
+
+ATURAN STRUKTURAL DAN DETERMINISTIK YANG TIDAK BOLEH DILANGGAR:
+1. Field "identitas.teks_cp_asli" HARUS PERSIS SAMA DENGAN SNAPSHOT TEKS CP GURU (Jangan diubah, jangan diparafrase, jangan dikurangi satu katapun).
+2. Tentukan Tujuan Pembelajaran dengan id terstandar: "TP-1", "TP-2", dst. TP harus teramati dan terukur.
+3. Jumlah pertemuan kegiatan HARUS SESUAI dengan meeting_count (${f.identitas.meeting_count || 1}).
+4. Pada setiap pertemuan:
+   - "tujuan_id_terkait" HARUS merupakan array dari ID TP yang sah (misal ["TP-1"]).
+   - Total durasi (kegiatan_awal.durasi_menit + kegiatan_inti.durasi_menit + kegiatan_penutup.durasi_menit) HARUS TEPAT SAMA dengan target per pertemuan: ${timeCalc.expectedPerMeetingMinutes} menit.
+5. Asesmen:
+   - Setiap instrumen asesmen harus memiliki "tujuan_id_terkait" yang sah (misal ["TP-1"]).
+   - Sertakan rubrik penilaian yang jelas.
+6. URL apapun yang disertakan harus valid sintaksis http:// atau https://.
+7. JANGAN membuat asumsi fasilitas yang tidak ada pada data kondisi guru.
+
+Keluarkan HANYA JSON murni dengan format skema berikut:
+{
+  "identitas": {
+    "satuan_pendidikan": "string",
+    "mata_pelajaran": "string",
+    "kelas_semester": "string",
+    "alokasi_waktu": "string",
+    "topik": "string",
+    "teks_cp_asli": "${snapshotCp.teksCP.replace(/"/g, '\\"')}"
+  },
+  "tujuan_pembelajaran": [
+    {
+      "id": "TP-1",
+      "deskripsi": "string terukur",
+      "bukti_ketercapaian": "string indikator teramati"
+    }
+  ],
+  "kegiatan_pembelajaran": [
+    {
+      "pertemuan_ke": 1,
+      "tujuan_id_terkait": ["TP-1"],
+      "kegiatan_awal": { "durasi_menit": 10, "aktivitas": "string apersepsi & kesadaran penuh" },
+      "kegiatan_inti": { "durasi_menit": 60, "aktivitas": "string pengalaman memahami & mengaplikasi mendalam" },
+      "kegiatan_penutup": { "durasi_menit": 10, "aktivitas": "string refleksi bermakna & menggembirakan" }
+    }
+  ],
+  "asesmen": {
+    "teknik_dan_instrumen": [
+      {
+        "nama_asesmen": "string",
+        "jenis": "Formatif / Sumatif",
+        "tujuan_id_terkait": ["TP-1"],
+        "instrumen": "string",
+        "rubrik_penilaian": "string indikator rubrik kecukupan"
+      }
+    ]
+  },
+  "prinsip_pembelajaran_mendalam": {
+    "berkesadaran": "string bagaimana murid sadar tujuan belajarnya",
+    "bermakna": "string kaitan dengan kehidupan nyata murid",
+    "menggembirakan": "string keterlibatan aktif dan antusiasme"
+  },
+  "sumber_dan_media": {
+    "alat_dan_bahan": "string sesuai fasilitas guru",
+    "tautan_rujukan": ["${snapshotCp.urlSumber || 'https://kurikulum.kemendikdasmen.go.id/rujukan'}"]
+  }
+}
+        `;
+
+        const generatorUserPrompt = `
+DATA KONTEKS INPUT GURU:
+- Satuan Pendidikan: ${f.identitas.school_name || '-'}
+- Guru: ${f.identitas.teacher_name || '-'}
+- Mapel / Kelas / Fase: ${f.identitas.subject_name || '-'} / ${f.identitas.grade_level || '-'} / ${f.identitas.phase || '-'}
+- Topik: ${f.identitas.topic || '-'}
+- Alokasi: ${f.identitas.meeting_count} pertemuan, total ${f.identitas.jp_total} JP @ ${f.identitas.minutes_per_jp} menit (Target per pertemuan: ${timeCalc.expectedPerMeetingMinutes} menit).
+- Pengetahuan Awal Murid: ${f.karakteristik.prior_knowledge || 'Belum diidentifikasi'}
+- Minat Murid: ${f.karakteristik.student_interests || 'Belum diidentifikasi'}
+- Kebutuhan Belajar: ${f.karakteristik.learning_needs || 'Belum diidentifikasi'}
+- Sarana / Lingkungan: ${f.kondisi.facilities || 'Standar kelas'} / ${f.kondisi.environment || 'Standar'}
+- Ketersediaan Teknologi: ${f.kondisi.technology_availability || 'Terbatas'}
+- Konteks Keseharian: ${f.kondisi.daily_life_context || 'Lingkungan sekolah'}
+- Model Pembelajaran Diinginkan Guru: ${f.preferensi.learning_strategy || 'Problem-Based Learning'}
+- Draf TP Awal Guru: ${f.preferensi.initial_tp || '-'}
+- Snapshot Teks CP Asli: "${snapshotCp.teksCP}"
+        `;
+
+        try {
+          const generatedRpm = await callGeminiApi(generatorSystemPrompt, generatorUserPrompt, apiKey);
+          f.generated_rpm = generatedRpm;
+
+          // Lakukan pemeriksaan otomatis segera setelah generasi
+          showToast('Draf RPM berhasil digenerasi. Melakukan pemeriksaan mandiri...', 'info');
+          await this.executeDualReview(f, snapshotCp, timeCalc.expectedPerMeetingMinutes, apiKey);
+        } catch (err) {
+          f.review_results = {
+            status: 'Pemeriksaan belum selesai',
+            keterangan_pemeriksaan: `Pemeriksaan belum selesai karena kegagalan pemrosesan AI: ${err.message}`,
+            findings: [{
+              bagian: 'Layanan AI',
+              tingkat: 'Perlu diperbaiki',
+              alasan: err.message,
+              saran: 'Periksa kembali koneksi internet dan validitas Kunci API Gemini Anda.'
+            }]
+          };
+          showToast('Generasi/Pemeriksaan gagal: ' + err.message, 'error');
+        } finally {
+          state.isGeneratingRpm = false;
+          await this.saveRpmDraft();
+          renderActiveModule();
+        }
+      },
+
+      // =======================================================================
+      // STEP 2: PEMERIKSAAN BERLAPIS (DETERMINISTIK KODE + AI INSPECTOR TERPISAH)
+      // =======================================================================
+      async auditRpmNow() {
+        this.syncRpmInputs();
+        const f = state.rpmCurrentForm;
+        const apiKey = getGeminiApiKey();
+
+        if (!f.generated_rpm) {
+          showToast('RPM belum digenerasi!', 'warning');
+          return;
+        }
+
+        const snapshotCp = f.referensi_cp?.cp_snapshot || this.buildCpSnapshot(f.referensi_cp || {});
+        const timeCalc = calculateRpmTime(f.identitas.jp_total, f.identitas.minutes_per_jp, f.identitas.meeting_count);
+
+        state.isReviewingRpm = true;
+        renderActiveModule();
+
+        try {
+          await this.executeDualReview(f, snapshotCp, timeCalc.expectedPerMeetingMinutes, apiKey);
+          showToast('Pemeriksaan mandiri selesai.');
+        } catch (err) {
+          f.review_results = {
+            status: 'Pemeriksaan belum selesai',
+            keterangan_pemeriksaan: `Pemeriksaan belum selesai: ${err.message}`,
+            findings: f.review_results?.findings || []
+          };
+          showToast('Pemeriksaan belum selesai: ' + err.message, 'error');
+        } finally {
+          state.isReviewingRpm = false;
+          await this.saveRpmDraft();
+          renderActiveModule();
+        }
+      },
+
+      async executeDualReview(f, snapshotCp, expectedMinutes, apiKey) {
+        // 1. Validasi Deterministik Kode
+        const deterministicResult = runDeterministicValidation(f.generated_rpm, snapshotCp, expectedMinutes);
+
+        // 2. Panggilan AI Pemeriksa Terpisah (Independent Inspector)
+        const inspectorSystemPrompt = `
+Anda adalah AI PEMERIKSA MUTU PEDAGOGIS Rencana Pembelajaran Mendalam (RPM).
+PENTING: Anda adalah entitas independen yang TERPISAH dari generator. JANGAN MENGANDALKAN PERNYATAAN GENERATOR BAHWA HASILNYA SUDAH BENAR.
+
+Periksa draf RPM secara kritis berdasarkan 9 Kriteria Pedagogis berikut:
+1. Keselarasan CP dengan tujuan pembelajaran (apakah TP menurunkan esensi CP atau melenceng).
+2. Keselarasan tujuan dengan kegiatan dan asesmen (apakah setiap aktivitas dan tes mengukur TP secara langsung).
+3. Keteramatan dan keterukuran tujuan (apakah kata kerja operasional teramati tanpa ambiguitas).
+4. Kejelasan pengalaman memahami, mengaplikasi, dan merefleksi (apakah tahapan pembelajaran mendalam tampak nyata).
+5. Penerapan prinsip berkesadaran, bermakna, dan menggembirakan.
+6. Kesesuaian dengan kebutuhan murid dan fasilitas nyata (apakah kegiatan realistis dijalankan di kelas dengan sarana yang dilaporkan).
+7. Kecukupan instrumen serta rubrik (apakah rubrik memiliki kriteria yang jelas untuk mengukur capaian).
+8. Asumsi atau klaim yang tidak didukung input guru (apakah draf mengada-ada kemampuan murid atau sarana mewah yang tidak ada di input).
+9. Konsistensi identitas dan referensi.
+
+LARANGAN KERAS:
+- DILARANG menyebut ini sertifikasi kepatuhan resmi.
+- DILARANG memberikan skor akurasi semu (seperti "95% akurat" atau "Skor 8.5/10").
+- Tingkat masalah HANYA BOLEH bernilai: "Perlu diperbaiki" atau "Perlu ditinjau".
+- Status keseluruhan HANYA BOLEH bernilai salah satu dari:
+  * "Perlu diperbaiki" (jika ada temuan fatal pada keselarasan, keutuhan CP, atau klaim fiktif)
+  * "Perlu ditinjau" (jika hanya ada saran perbaikan minor/pedagogis)
+  * "Tidak ditemukan masalah pada pemeriksaan ini" (jika semua 9 aspek terpenuhi dengan sangat baik)
+
+Keluarkan output HANYA JSON murni dengan format:
+{
+  "status": "Perlu diperbaiki" / "Perlu ditinjau" / "Tidak ditemukan masalah pada pemeriksaan ini",
+  "keterangan_pemeriksaan": "string ringkasan evaluasi mandiri tanpa sertifikasi resmi",
+  "findings": [
+    {
+      "bagian": "string nama bagian (misal: Tujuan Pembelajaran, Pertemuan 1, Rubrik Asesmen)",
+      "tingkat": "Perlu diperbaiki / Perlu ditinjau",
+      "alasan": "string penjelasan ketidaksesuaian berdasarkan input nyata",
+      "saran": "string tindakan perbaikan yang jelas dan konkret"
+    }
+  ]
+}
+        `;
+
+        const inspectorUserPrompt = `
+DATA ACUAN GURU:
+- Konteks Murid: Pengetahuan Awal="${f.karakteristik.prior_knowledge}", Minat="${f.karakteristik.student_interests}", Kebutuhan Belajar="${f.karakteristik.learning_needs}"
+- Konteks Lingkungan: Fasilitas="${f.kondisi.facilities}", Teknologi="${f.kondisi.technology_availability}", Keseharian="${f.kondisi.daily_life_context}"
+- Snapshot CP Resmi: "${snapshotCp.teksCP}"
+- Target Durasi per Pertemuan: ${expectedMinutes} menit
+
+DRAF RPM YANG DIPERIKSA:
+${JSON.stringify(f.generated_rpm, null, 2)}
+        `;
+
+        let inspectorFindings = [];
+        let aiOverallStatus = 'Tidak ditemukan masalah pada pemeriksaan ini';
+        let aiSummary = 'Dokumen RPM telah diperiksa terhadap 9 standar mutu pedagogis.';
+
+        try {
+          const aiReview = await callGeminiApi(inspectorSystemPrompt, inspectorUserPrompt, apiKey);
+          inspectorFindings = Array.isArray(aiReview.findings) ? aiReview.findings : [];
+          aiOverallStatus = aiReview.status || 'Perlu ditinjau';
+          aiSummary = aiReview.keterangan_pemeriksaan || aiSummary;
+        } catch (e) {
+          inspectorFindings.push({
+            bagian: 'Pemeriksaan AI Independen',
+            tingkat: 'Perlu ditinjau',
+            alasan: `Evaluasi AI independen tidak dapat diselesaikan: ${e.message}`,
+            saran: 'Jalankan kembali tombol "Periksa Ulang RPM" saat koneksi stabil.'
+          });
+          aiOverallStatus = 'Perlu ditinjau';
+        }
+
+        // Gabungkan temuan deterministik kode + temuan AI
+        const allFindings = [...deterministicResult.findings, ...inspectorFindings];
+
+        let finalStatus = 'Tidak ditemukan masalah pada pemeriksaan ini';
+        if (allFindings.some(item => item.tingkat === 'Perlu diperbaiki')) {
+          finalStatus = 'Perlu diperbaiki';
+        } else if (allFindings.length > 0 || aiOverallStatus === 'Perlu ditinjau') {
+          finalStatus = 'Perlu ditinjau';
+        }
+
+        f.review_results = {
+          status: finalStatus,
+          keterangan_pemeriksaan: aiSummary,
+          findings: allFindings,
+          inspected_at: new Date().toISOString()
+        };
+      },
+
+      // =======================================================================
+      // STEP 3: PERBAIKAN BERDASARKAN TEMUAN (DENGAN ARSIP VERSI & KONFIRMASI)
+      // =======================================================================
+      async repairRpmBasedOnFindings() {
+        this.syncRpmInputs();
+        const f = state.rpmCurrentForm;
+        const apiKey = getGeminiApiKey();
+
+        if (!f.generated_rpm || !f.review_results?.findings) {
+          showToast('Tidak ada temuan yang perlu diperbaiki.', 'warning');
+          return;
+        }
+
+        state.isRepairingRpm = true;
+        renderActiveModule();
+
+        const snapshotCp = f.referensi_cp?.cp_snapshot || this.buildCpSnapshot(f.referensi_cp || {});
+        const timeCalc = calculateRpmTime(f.identitas.jp_total, f.identitas.minutes_per_jp, f.identitas.meeting_count);
+
+        const repairSystemPrompt = `
+Anda adalah AI Spesialis Revisi Kurikulum.
+Tugas Anda adalah MEMPERBAIKI Draf RPM agar seluruh daftar temuan masalah dari hasil pemeriksaan teratasi sepenuhnya.
+
+ATURAN PERBAIKAN MUTLAK:
+1. "identitas.teks_cp_asli" HARUS TETAP SAMA PERSIS dengan snapshot asli: "${snapshotCp.teksCP.replace(/"/g, '\\"')}".
+2. Selaraskan seluruh "tujuan_id_terkait" di kegiatan dan asesmen dengan ID TP yang sah.
+3. Rincian durasi kegiatan di setiap pertemuan HARUS berjumlah tepat ${timeCalc.expectedPerMeetingMinutes} menit.
+4. Hilangkan seluruh klaim atau asumsi fasilitas di luar laporan guru.
+5. Berikan ringkasan perubahan (diff summary) yang transparan.
+
+Keluarkan HANYA JSON dengan format:
+{
+  "ringkasan_perubahan": "string uraian singkat poin apa saja yang diubah atau diselaraskan",
+  "repaired_rpm": { ...objek draf RPM lengkap yang telah diperbaiki... }
+}
+        `;
+
+        const repairUserPrompt = `
+DRAF RPM SAAT INI:
+${JSON.stringify(f.generated_rpm, null, 2)}
+
+DAFTAR TEMUAN MASALAH YANG WAJIB DISELESAIKAN:
+${JSON.stringify(f.review_results.findings, null, 2)}
+        `;
+
+        try {
+          const repairRes = await callGeminiApi(repairSystemPrompt, repairUserPrompt, apiKey);
+          f.pending_repaired_rpm = repairRes.repaired_rpm;
+          f.pending_diff_summary = repairRes.ringkasan_perubahan || 'Perbaikan terhadap seluruh temuan telah dirumuskan.';
+          showToast('Usulan perbaikan selesai disiapkan! Silakan tinjau ringkasan perubahan.', 'info');
+        } catch (err) {
+          showToast('Gagal merumuskan perbaikan: ' + err.message, 'error');
+        } finally {
+          state.isRepairingRpm = false;
+          renderActiveModule();
+        }
+      },
+
+      // Tindakan Konfirmasi Pengguna untuk Menerapkan Perbaikan
+      async applyPendingRepair() {
+        const f = state.rpmCurrentForm;
+        if (!f.pending_repaired_rpm) return;
+
+        // 1. Simpan versi lama ke Riwayat Versi sebelum diganti
+        const nextVerNum = (state.rpm_versions.length || 0) + 1;
+        const versionRecord = {
+          id: crypto.randomUUID(),
+          draft_id: f.id || crypto.randomUUID(),
+          teacher_id: state.user?.id || 'preview-teacher-1',
+          version_number: nextVerNum,
+          description: `Versi sebelum perbaikan: ${f.pending_diff_summary?.slice(0, 80) || 'Revisi temuan'}...`,
+          snapshot_data: structuredClone(f.generated_rpm),
+          created_at: new Date().toISOString()
+        };
+
+        state.rpm_versions.unshift(versionRecord);
+        if (!IS_PREVIEW && supabase) {
+          await supabase.from('rpm_versions').insert(versionRecord).catch(() => {});
+        }
+
+        // 2. Terapkan Draf Baru
+        f.generated_rpm = structuredClone(f.pending_repaired_rpm);
+        f.pending_repaired_rpm = null;
+        f.pending_diff_summary = null;
+
+        // 3. Jalankan pemeriksaan ulang terhadap draf baru
+        showToast('Perbaikan diterapkan! Melakukan verifikasi ulang hasil revisi...', 'info');
+        const snapshotCp = f.referensi_cp?.cp_snapshot || this.buildCpSnapshot(f.referensi_cp || {});
+        const timeCalc = calculateRpmTime(f.identitas.jp_total, f.identitas.minutes_per_jp, f.identitas.meeting_count);
+        const apiKey = getGeminiApiKey();
+
+        if (apiKey) {
+          await this.executeDualReview(f, snapshotCp, timeCalc.expectedPerMeetingMinutes, apiKey);
+        }
+
         await this.saveRpmDraft();
-        showToast('Data input RPM telah disimpan sebagai draf dan siap untuk tahap pemrosesan berikutnya!', 'info');
+        renderActiveModule();
+        showToast('RPM telah diperbarui dan diverifikasi ulang.');
+      },
+
+      cancelPendingRepair() {
+        state.rpmCurrentForm.pending_repaired_rpm = null;
+        state.rpmCurrentForm.pending_diff_summary = null;
+        renderActiveModule();
+        showToast('Usulan perbaikan dibatalkan. Draf tidak diubah.');
+      },
+
+      restoreVersion(versionId) {
+        const target = state.rpm_versions.find(v => v.id === versionId);
+        if (!target) return;
+
+        askConfirm('Pulihkan Versi Ini?', `Apakah Anda ingin mengembalikan isi draf ke Versi #${target.version_number}?`, async () => {
+          state.rpmCurrentForm.generated_rpm = structuredClone(target.snapshot_data);
+          state.rpmCurrentForm.pending_repaired_rpm = null;
+          state.rpmCurrentForm.pending_diff_summary = null;
+
+          const snapshotCp = state.rpmCurrentForm.referensi_cp?.cp_snapshot || this.buildCpSnapshot(state.rpmCurrentForm.referensi_cp || {});
+          const timeCalc = calculateRpmTime(
+            state.rpmCurrentForm.identitas.jp_total,
+            state.rpmCurrentForm.identitas.minutes_per_jp,
+            state.rpmCurrentForm.identitas.meeting_count
+          );
+          const apiKey = getGeminiApiKey();
+
+          if (apiKey) {
+            await this.executeDualReview(state.rpmCurrentForm, snapshotCp, timeCalc.expectedPerMeetingMinutes, apiKey);
+          }
+
+          await this.saveRpmDraft();
+          renderActiveModule();
+          showToast(`Draf berhasil dipulihkan ke Versi #${target.version_number}.`);
+        });
+      },
+
+      printCurrentRpm() {
+        const rpm = state.rpmCurrentForm?.generated_rpm;
+        if (!rpm) return;
+
+        const printEl = document.getElementById('print-area');
+        printEl.innerHTML = `
+          <div style="font-family: Arial, sans-serif; line-height: 1.5; color: black; max-width: 800px; margin: auto;">
+            <div style="text-align: center; border-bottom: 2px solid black; padding-bottom: 10px; margin-bottom: 16px;">
+              <h2 style="margin: 0; text-transform: uppercase;">RENCANA PEMBELAJARAN MENDALAM (RPM)</h2>
+              <div style="font-size: 14px;">${rpm.identitas?.satuan_pendidikan || 'SMP NEGERI 1 BANDAR LAMPUNG'}</div>
+            </div>
+
+            <table style="width: 100%; font-size: 13px; margin-bottom: 16px; border-collapse: collapse;">
+              <tr><td style="width: 25%; font-weight: bold;">Mata Pelajaran:</td><td>${rpm.identitas?.mata_pelajaran || '-'}</td></tr>
+              <tr><td style="font-weight: bold;">Kelas / Semester:</td><td>${rpm.identitas?.kelas_semester || '-'}</td></tr>
+              <tr><td style="font-weight: bold;">Topik:</td><td>${rpm.identitas?.topik || '-'}</td></tr>
+              <tr><td style="font-weight: bold;">Alokasi Waktu:</td><td>${rpm.identitas?.alokasi_waktu || '-'}</td></tr>
+            </table>
+
+            <h4 style="margin: 12px 0 6px 0; border-bottom: 1px solid #ccc;">A. CAPAIAN PEMBELAJARAN (CP ASLI)</h4>
+            <div style="font-size: 12px; background: #f9f9f9; padding: 8px; border: 1px solid #eee;">
+              ${rpm.identitas?.teks_cp_asli || '-'}
+            </div>
+
+            <h4 style="margin: 16px 0 6px 0; border-bottom: 1px solid #ccc;">B. TUJUAN PEMBELAJARAN</h4>
+            <ol style="font-size: 13px; padding-left: 20px;">
+              ${(rpm.tujuan_pembelajaran || []).map(tp => `<li><strong>[${tp.id}]</strong> ${tp.deskripsi} <br/><em>Bukti: ${tp.bukti_ketercapaian || '-'}</em></li>`).join('')}
+            </ol>
+
+            <h4 style="margin: 16px 0 6px 0; border-bottom: 1px solid #ccc;">C. KEGIATAN PEMBELAJARAN</h4>
+            ${(rpm.kegiatan_pembelajaran || []).map(m => `
+              <div style="margin-bottom: 12px; font-size: 12px;">
+                <strong>Pertemuan ${m.pertemuan_ke}</strong> (Target: ${(m.tujuan_id_terkait || []).join(', ')})
+                <ul>
+                  <li><strong>Awal (${m.kegiatan_awal?.durasi_menit}m):</strong> ${m.kegiatan_awal?.aktivitas}</li>
+                  <li><strong>Inti (${m.kegiatan_inti?.durasi_menit}m):</strong> ${m.kegiatan_inti?.aktivitas}</li>
+                  <li><strong>Penutup (${m.kegiatan_penutup?.durasi_menit}m):</strong> ${m.kegiatan_penutup?.aktivitas}</li>
+                </ul>
+              </div>
+            `).join('')}
+
+            <h4 style="margin: 16px 0 6px 0; border-bottom: 1px solid #ccc;">D. ASESMEN & RUBRIK</h4>
+            ${(rpm.asesmen?.teknik_dan_instrumen || []).map(a => `
+              <div style="font-size: 12px; margin-bottom: 8px;">
+                <strong>${a.nama_asesmen} (${a.jenis})</strong> - Terkait: ${(a.tujuan_id_terkait || []).join(', ')}<br/>
+                <span>Instrumen: ${a.instrumen || '-'}</span><br/>
+                <span>Rubrik: ${a.rubrik_penilaian || '-'}</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+        window.print();
+      },
+
+      finishRpmInputStage() {
+        this.saveRpmDraft();
+        showToast('Draf RPM berhasil diamankan dan siap digunakan.');
+      },
+
+      // MODAL TAMBAH MODUL AJAR BIASA
+      openCurriculumModal() {
+        openModal('Tambah Modul Ajar / RPP', `
+          <form onsubmit="window.app.saveCurriculumPlan(event)" class="space-y-3 text-xs">
+            <div>
+              <label class="font-bold block mb-1">Topik / Judul Modul</label>
+              <input name="topic_title" required placeholder="Contoh: Jaringan Komputer & Internet" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="font-bold block mb-1">Mata Pelajaran</label>
+                <input name="subject_name" required value="${state.teacher?.subject_name || ''}" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+              <div>
+                <label class="font-bold block mb-1">Kelas</label>
+                <input name="grade_level" type="number" value="9" class="w-full px-3 py-2 rounded-xl border border-slate-200" />
+              </div>
+            </div>
+            <div>
+              <label class="font-bold block mb-1">Teks Capaian Pembelajaran (CP)</label>
+              <textarea name="cp_text" rows="3" required class="w-full p-2.5 rounded-xl border border-slate-200"></textarea>
+            </div>
+            <div>
+              <label class="font-bold block mb-1">Tujuan Pembelajaran (TP)</label>
+              <textarea name="tp_text" rows="3" required class="w-full p-2.5 rounded-xl border border-slate-200"></textarea>
+            </div>
+            <button type="submit" class="w-full py-2.5 rounded-xl bg-[#072B7A] text-white font-bold">Simpan Modul Ajar</button>
+          </form>
+        `);
+      },
+
+      async saveCurriculumPlan(e) {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        const item = {
+          id: crypto.randomUUID(),
+          teacher_id: state.user?.id || 'preview-teacher-1',
+          topic_title: fd.get('topic_title'),
+          subject_name: fd.get('subject_name'),
+          grade_level: parseInt(fd.get('grade_level'), 10) || 9,
+          cp_text: fd.get('cp_text'),
+          tp_text: fd.get('tp_text'),
+          created_at: new Date().toISOString()
+        };
+
+        state.curriculum_plans.unshift(item);
+        saveLocalState();
+        if (!IS_PREVIEW && supabase) {
+          await supabase.from('curriculum_plans').insert(item);
+        }
+        closeModal();
+        renderActiveModule();
+        showToast('Modul ajar tersimpan!');
+      },
+
+      deleteCurriculumPlan(id) {
+        askConfirm('Hapus Modul Ajar?', 'Modul ajar ini akan dihapus.', async () => {
+          state.curriculum_plans = state.curriculum_plans.filter(p => p.id !== id);
+          saveLocalState();
+          if (!IS_PREVIEW && supabase) {
+            await supabase.from('curriculum_plans').delete().eq('id', id);
+          }
+          renderActiveModule();
+          showToast('Modul ajar dihapus.');
+        });
+      },
+
+      saveProfile(e) {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        state.teacher.full_name = fd.get('full_name');
+        state.teacher.subject_name = fd.get('subject_name');
+        state.teacher.school_name = fd.get('school_name');
+        const key = fd.get('gemini_api_key');
+        if (key !== null) {
+          state.teacher.gemini_api_key = key;
+          localStorage.setItem(GEMINI_API_KEY_LOCAL, key);
+        }
+        saveLocalState();
+        if (!IS_PREVIEW && supabase && state.user) {
+          supabase.from('teachers').update(state.teacher).eq('id', state.user.id);
+        }
+        updateShellHeader();
+        renderActiveModule();
+        showToast('Profil guru berhasil diperbarui.');
       }
     };
 
