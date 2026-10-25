@@ -361,12 +361,42 @@
       { id: 'pln-4', class_id: 'cls-1', plan_type: 'SAS / PAS', topic: 'Sumatif Akhir Semester Gasal', planned_date: '2026-12-15', status: 'Direncanakan', notes: 'Evaluasi akhir semester gasal' }
     ];
 
-    const RPM_INPUT_TEMPLATE = `- Satuan pendidikan/Kelas/Fase: SMP Negeri 1 Bandar Lampung / Kelas 9 / Fase D
-- Mata pelajaran & Topik: Informatika / Berpikir Komputasional
-- Capaian Pembelajaran (CP): Peserta didik mampu menerapkan berpikir komputasional untuk menghasilkan beberapa solusi dalam menyelesaikan persoalan dengan data diskrit bervolume kecil dan mendisposisikan berpikir komputasional dalam bidang lain.
-- Alokasi waktu: 2 pertemuan x 80 menit
-- Karakteristik murid & konteks sekolah/daerah: Murid aktif menyukai analisis studi kasus kontekstual di lingkungan sekolah, sarana lab komputer & papan tulis tersedia
-- Dimensi Profil Lulusan yang ditekankan: Penalaran Kritis, Kolaborasi, Kreativitas`;
+    const RPM_INPUT_TEMPLATE = '';
+
+    const RPM_PROMPT_GUIDE_COPY_TEXT = `Peran: Kamu adalah pakar kurikulum dan pedagogi Indonesia yang menguasai pendekatan Pembelajaran Mendalam (Kemendikdasmen).
+Tugas: Susun Rencana Pembelajaran Mendalam (RPM) yang siap pakai, operasional, dan kontekstual.
+DATA:
+1. Nama satuan pendidikan: [isi]
+2. Nama guru: [isi]
+3. Jenjang pendidikan: [isi]
+4. Mata pelajaran: [isi]
+5. Fase dan kelas: [isi]
+6. Semester dan tahun ajaran: [isi]
+7. Topik atau materi: [isi]
+8. Jumlah pertemuan: [isi]
+9. Alokasi waktu setiap pertemuan: [isi]
+10. Capaian Pembelajaran: [tempelkan kutipan CP dari sumber resmi]
+11. Pengetahuan awal dan kebutuhan belajar murid: [isi]
+12. Sarana, media, dan lingkungan belajar: [isi]
+13. Tujuan pembelajaran : [isi]
+14. Instrumen dan lampiran, Sertakan sesuai kebutuhan :
+   - LKPD dengan petunjuk, tugas, dan hasil yang diharapkan;
+   - soal beserta kunci dan pedoman penskoran;
+   - lembar observasi;
+   - rubrik analitik;
+   - bahan ajar ringkas;
+   - pertanyaan refleksi murid dan guru.
+STRUKTUR RPM:
+1. Identitas
+2. Identifikasi: kesiapan murid, karakteristik materi, dimensi profil lulusan
+3. Desain Pembelajaran: tujuan pembelajaran (ABCD, terukur), lintas disiplin ilmu, topik kontekstual, praktik pedagogis (model/strategi + alasan), kemitraan pembelajaran, lingkungan belajar, pemanfaatan teknologi digital
+4. Pengalaman Belajar per pertemuan, dengan tahapan:
+   - Memahami (berkesadaran & bermakna)
+   - Mengaplikasi (bermakna & menggembirakan)
+   - Merefleksi (berkesadaran)
+   Sertakan awal, inti, penutup, dengan kegiatan guru dan murid, durasi menit, serta pertanyaan pemantik.
+5. Asesmen: awal (diagnostik), proses (formatif, dengan rubrik/instrumen), akhir (sumatif, dengan rubrik 4 level)
+6. Lampiran: LKPD singkat, bahan ajar ringkas, rubrik, dan tindak lanjut (pengayaan & remedial)`;
 
     const RPM_SYSTEM_INSTRUCTION = `Peran: Kamu adalah pakar kurikulum dan pedagogi Indonesia yang menguasai pendekatan Pembelajaran Mendalam (Kemendikdasmen).
 
@@ -554,24 +584,40 @@ ATURAN:
 
     function parseRpmFields(rawText) {
       const text = String(rawText || '');
-      const extract = (pattern) => {
-        const regex = new RegExp(`(?:^|\\n)\\s*[-•*]?\\s*${pattern}\\s*:\\s*([^\\n]+(?:\\n(?!\\s*[-•*]?\\s*[A-Za-z\\s&/]+:)[^\\n]+)*)`, 'i');
+      const cleanVal = (v) => String(v || '').replace(/^\[isi\]$/i, '').replace(/^\[tempelkan kutipan CP dari sumber resmi\]$/i, '').trim();
+
+      const extractLine = (pattern) => {
+        const regex = new RegExp(`(?:^|\\n)\\s*(?:\\d+\\.\\s*|[-•*]\\s*)?${pattern}\\s*:\\s*([^\\n]+)`, 'i');
         const m = text.match(regex);
-        return m ? m[1].trim() : '';
+        return m ? cleanVal(m[1]) : '';
       };
 
-      const spkf = extract('Satuan pendidikan[\\/\\s]*Kelas[\\/\\s]*Fase');
-      let sp = '', kls = '', fse = '';
-      if (spkf) {
+      const sp1 = extractLine('Nama satuan pendidikan');
+      const guru1 = extractLine('Nama guru');
+      const jenjang1 = extractLine('Jenjang pendidikan');
+      const mapel1 = extractLine('Mata pelajaran');
+      const faseKelas1 = extractLine('Fase dan kelas');
+      const semTa1 = extractLine('Semester dan tahun ajaran');
+      const topik1 = extractLine('Topik atau materi');
+      const jmlPertemuan1 = extractLine('Jumlah pertemuan');
+      const alokasiPertemuan1 = extractLine('Alokasi waktu setiap pertemuan');
+      const cp1 = extractLine('Capaian Pembelajaran');
+      const kar1 = extractLine('Pengetahuan awal dan kebutuhan belajar murid');
+      const sarana1 = extractLine('Sarana,\\s*media,\\s*dan lingkungan belajar');
+      const tp1 = extractLine('Tujuan pembelajaran');
+
+      const spkf = extractLine('Satuan pendidikan[\\/\\s]*Kelas[\\/\\s]*Fase');
+      let sp = sp1, kls = faseKelas1, fse = jenjang1 || 'Fase D';
+      if (!sp && spkf) {
         const parts = spkf.split('/').map(s => s.trim());
         sp = parts[0] || '';
         kls = parts[1] || '';
         fse = parts[2] || '';
       }
 
-      const mt = extract('Mata pelajaran\\s*&\\s*Topik');
-      let mapel = '', topik = '';
-      if (mt) {
+      const mt = extractLine('Mata pelajaran\\s*&\\s*Topik');
+      let mapel = mapel1, topik = topik1;
+      if (!mapel && !topik && mt) {
         const parts = mt.split('/').map(s => s.trim());
         if (parts.length > 1) {
           mapel = parts[0];
@@ -581,21 +627,27 @@ ATURAN:
         }
       }
 
-      const cp = extract('Capaian Pembelajaran\\s*\\(CP\\)');
-      const alokasi = extract('Alokasi waktu');
-      const kar = extract('Karakteristik murid\\s*&\\s*konteks sekolah[\\/\\s]*daerah');
-      const dimensi = extract('Dimensi Profil Lulusan yang ditekankan');
+      const cpOld = extractLine('Capaian Pembelajaran\\s*\\(CP\\)');
+      const alokasiOld = extractLine('Alokasi waktu');
+      const karOld = extractLine('Karakteristik murid\\s*&\\s*konteks sekolah[\\/\\s]*daerah');
+      const dimensi = extractLine('Dimensi Profil Lulusan yang ditekankan');
+
+      const combinedAlokasi = [jmlPertemuan1, alokasiPertemuan1].filter(Boolean).join(' x ') || alokasiOld;
+      const combinedKar = [kar1, sarana1].filter(Boolean).join('. ') || karOld;
 
       return {
         satuanPendidikan: sp || (state.teacher?.school_name || 'Satuan Pendidikan (asumsi)'),
+        namaGuru: guru1 || (state.teacher?.full_name || 'Guru Mata Pelajaran'),
+        semesterTa: semTa1 || `${state.teacher?.academic_year || '2026/2027'} / ${state.teacher?.semester || 'Ganjil'}`,
         kelas: kls || 'Kelas IX (asumsi)',
         fase: fse || 'Fase D (asumsi)',
         mataPelajaran: mapel || (state.teacher?.subject_name || 'Informatika (asumsi)'),
         topik: topik || 'Pembelajaran Kontekstual (asumsi)',
-        cp: cp || 'Peserta didik menguasai kompetensi esensial materi secara bermakna (asumsi)',
-        alokasi: alokasi || '2 pertemuan x 80 menit (asumsi)',
-        karakteristik: kar || 'Kemampuan awal beragam, sarana dan lingkungan belajar memadai (asumsi)',
-        dimensi: dimensi || 'Penalaran Kritis, Kolaborasi, Kreativitas (asumsi)'
+        cp: cp1 || cpOld || 'Peserta didik menguasai kompetensi esensial materi secara bermakna (asumsi)',
+        alokasi: combinedAlokasi || '2 pertemuan x 80 menit (asumsi)',
+        karakteristik: combinedKar || 'Kemampuan awal beragam, sarana dan lingkungan belajar memadai (asumsi)',
+        tujuanAwal: tp1 || '',
+        dimensi: dimensi || 'Penalaran Kritis, Kolaborasi, Kreativitas'
       };
     }
 
@@ -616,10 +668,10 @@ ATURAN:
             <table class="w-full text-xs border-collapse border border-slate-300">
               <tbody>
                 <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50 w-56">Satuan Pendidikan</td><td class="border border-slate-300 p-2">${f.satuanPendidikan}</td></tr>
-                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Nama Guru</td><td class="border border-slate-300 p-2">${t.full_name || 'Budi Santoso, S.Kom.'}</td></tr>
+                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Nama Guru</td><td class="border border-slate-300 p-2">${f.namaGuru || t.full_name || 'Budi Santoso, S.Kom.'}</td></tr>
                 <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Mata Pelajaran & Topik</td><td class="border border-slate-300 p-2">${f.mataPelajaran} — ${f.topik}</td></tr>
                 <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Kelas & Fase</td><td class="border border-slate-300 p-2">${f.kelas} / ${f.fase}</td></tr>
-                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Tahun Ajaran & Semester</td><td class="border border-slate-300 p-2">${t.academic_year || '2026/2027'} / ${t.semester || 'Ganjil'}</td></tr>
+                <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Tahun Ajaran & Semester</td><td class="border border-slate-300 p-2">${f.semesterTa}</td></tr>
                 <tr><td class="border border-slate-300 p-2 font-bold bg-slate-50">Alokasi Waktu</td><td class="border border-slate-300 p-2">${f.alokasi}</td></tr>
               </tbody>
             </table>
@@ -952,10 +1004,15 @@ ATURAN:
           if (Array.isArray(parsed.homeroom_records)) state.homeroom_records = parsed.homeroom_records;
           if (Array.isArray(parsed.teacher_portfolios)) state.teacher_portfolios = parsed.teacher_portfolios;
           if (parsed.classKkm) state.classKkm = parsed.classKkm;
-          if (parsed.aiRpmInputText && !parsed.aiRpmInputText.includes('1. Nama satuan pendidikan') && !parsed.aiRpmInputText.includes('Tujuan pembelajaran awal jika sudah ada :')) {
+          if (
+            parsed.aiRpmInputText &&
+            !parsed.aiRpmInputText.includes('1. Nama satuan pendidikan') &&
+            !parsed.aiRpmInputText.includes('Tujuan pembelajaran awal jika sudah ada :') &&
+            !parsed.aiRpmInputText.includes('- Satuan pendidikan/Kelas/Fase: SMP Negeri 1 Bandar Lampung')
+          ) {
             state.aiRpmInputText = parsed.aiRpmInputText;
           } else {
-            state.aiRpmInputText = RPM_INPUT_TEMPLATE;
+            state.aiRpmInputText = '';
           }
           if (parsed.aiGeneratedRpm) state.aiGeneratedRpm = parsed.aiGeneratedRpm;
           if (parsed.aiGeneratedSoal) state.aiGeneratedSoal = parsed.aiGeneratedSoal;
@@ -1257,7 +1314,7 @@ ATURAN:
 
     function renderAiRpmSection(isGenerating, t) {
       const result = state.aiGeneratedRpm;
-      const currentInput = state.aiRpmInputText || RPM_INPUT_TEMPLATE;
+      const currentInput = state.aiRpmInputText || '';
       return `
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
           <div class="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-4">
@@ -1265,13 +1322,14 @@ ATURAN:
               <div>
                 <span class="text-[11px] font-extrabold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full">Generate RPM dengan AI</span>
                 <h4 class="text-base font-extrabold text-slate-900 mt-1">Kolom Data Masukan Guru</h4>
-                <p class="text-xs text-slate-500">Masukkan data pembelajaran di bawah ini untuk menyusun Rencana Pembelajaran Mendalam (RPM) sesuai pendekatan Pembelajaran Mendalam (Kemendikdasmen).</p>
+                <p class="text-xs text-slate-500">Salin dan lengkapi prompt dari panduan di bawah, lalu tempelkan (paste) ke dalam kolom Data Pembelajaran Guru.</p>
               </div>
-              <button type="button" onclick="window.app.resetRpmTemplateInput()" class="text-[11px] font-extrabold text-blue-700 hover:text-blue-900 underline shrink-0">
-                Reset Isian
+              <button type="button" onclick="window.app.resetRpmTemplateInput()" class="text-[11px] font-extrabold text-rose-600 hover:text-rose-800 underline shrink-0">
+                Bersihkan Kolom
               </button>
             </div>
 
+            <!-- LINK PANDUAN CP RESMI -->
             <div class="p-3 bg-blue-50 rounded-xl border border-blue-200/80 text-xs text-blue-900 flex items-center justify-between gap-2">
               <div class="flex items-center gap-2">
                 <i data-lucide="book-open" class="w-4 h-4 text-blue-700 shrink-0"></i>
@@ -1284,10 +1342,85 @@ ATURAN:
               </a>
             </div>
 
+            <!-- PANDUAN PROMPT PEMBUATAN RPM PERSIS DI BAWAH LINK PANDUAN CP -->
+            <div class="p-3.5 bg-amber-50/70 rounded-xl border border-amber-200/90 space-y-2.5 text-xs">
+              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200/70 pb-2">
+                <div class="flex items-center gap-1.5 font-extrabold text-amber-950">
+                  <i data-lucide="file-text" class="w-4 h-4 text-amber-700 shrink-0"></i>
+                  <span>Panduan Pembuatan Prompt RPM:</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <button type="button" onclick="window.app.copyRpmGuidePrompt()"
+                    class="px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-[11px] inline-flex items-center gap-1 shadow-sm transition" title="Salin teks prompt panduan">
+                    <i data-lucide="copy" class="w-3 h-3"></i>
+                    <span>Salin Prompt</span>
+                  </button>
+                  <button type="button" onclick="window.app.downloadRpmGuideWord()"
+                    class="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-50 text-blue-800 border border-amber-300 font-bold text-[11px] inline-flex items-center gap-1 shadow-sm transition" title="Unduh file Word Panduan Pembuatan Prompt">
+                    <i data-lucide="download" class="w-3 h-3"></i>
+                    <span>Unduh Word</span>
+                  </button>
+                </div>
+              </div>
+
+              <ol class="list-decimal pl-4 space-y-1 text-[11px] text-slate-700 leading-relaxed">
+                <li>Isi data yang diperlukan (semakin banyak informasi/data yang diberikan semakin bagus hasilnya)</li>
+                <li>Hapus dan ganti <span class="text-rose-600 font-bold">teks berwarna merah</span></li>
+                <li>Jika dirasa cukup salin/copy semua data yang telah diisi kemudian paste pada kolom <strong>Generate RPM dengan AI</strong></li>
+                <li>Jangan lupa cek kembali hasilnya, unduh dan edit bagian yang tidak sesuai (ingat AI hanya membantu dan bisa salah)</li>
+              </ol>
+
+              <div class="bg-white rounded-lg border border-amber-200 p-3 max-h-56 overflow-y-auto custom-scroll text-[11px] font-mono leading-relaxed text-slate-800 space-y-1">
+                <div class="text-[10px] font-sans font-extrabold uppercase tracking-wider text-blue-700 bg-blue-50 px-2 py-0.5 rounded inline-block mb-1">Copy nya nanti dari sini ya !</div>
+                <div><strong>Peran:</strong> Kamu adalah pakar kurikulum dan pedagogi Indonesia yang menguasai pendekatan Pembelajaran Mendalam (Kemendikdasmen).</div>
+                <div><strong>Tugas:</strong> Susun Rencana Pembelajaran Mendalam (RPM) yang siap pakai, operasional, dan kontekstual.</div>
+                <div class="pt-1 font-bold">DATA:</div>
+                <div>1. Nama satuan pendidikan: <span class="text-rose-600 font-bold">[isi]</span></div>
+                <div>2. Nama guru: <span class="text-rose-600 font-bold">[isi]</span></div>
+                <div>3. Jenjang pendidikan: <span class="text-rose-600 font-bold">[isi]</span></div>
+                <div>4. Mata pelajaran: <span class="text-rose-600 font-bold">[isi]</span></div>
+                <div>5. Fase dan kelas: <span class="text-rose-600 font-bold">[isi]</span></div>
+                <div>6. Semester dan tahun ajaran: <span class="text-rose-600 font-bold">[isi]</span></div>
+                <div>7. Topik atau materi: <span class="text-rose-600 font-bold">[isi]</span></div>
+                <div>8. Jumlah pertemuan: <span class="text-rose-600 font-bold">[isi]</span></div>
+                <div>9. Alokasi waktu setiap pertemuan: <span class="text-rose-600 font-bold">[isi]</span></div>
+                <div>10. Capaian Pembelajaran: <span class="text-rose-600 font-bold">[tempelkan kutipan CP dari sumber resmi]</span></div>
+                <div>11. Pengetahuan awal dan kebutuhan belajar murid: <span class="text-rose-600 font-bold">[isi]</span></div>
+                <div>12. Sarana, media, dan lingkungan belajar: <span class="text-rose-600 font-bold">[isi]</span></div>
+                <div>13. Tujuan pembelajaran : <span class="text-rose-600 font-bold">[isi]</span></div>
+                <div class="text-rose-600 font-bold">
+                  14. Instrumen dan lampiran, Sertakan sesuai kebutuhan :<br/>
+                  &nbsp;&nbsp;&nbsp;- LKPD dengan petunjuk, tugas, dan hasil yang diharapkan;<br/>
+                  &nbsp;&nbsp;&nbsp;- soal beserta kunci dan pedoman penskoran;<br/>
+                  &nbsp;&nbsp;&nbsp;- lembar observasi;<br/>
+                  &nbsp;&nbsp;&nbsp;- rubrik analitik;<br/>
+                  &nbsp;&nbsp;&nbsp;- bahan ajar ringkas;<br/>
+                  &nbsp;&nbsp;&nbsp;- pertanyaan refleksi murid dan guru.
+                </div>
+                <div class="pt-1 font-bold">STRUKTUR RPM:</div>
+                <div>1. Identitas</div>
+                <div>2. Identifikasi: kesiapan murid, karakteristik materi, dimensi profil lulusan</div>
+                <div>3. Desain Pembelajaran: tujuan pembelajaran (ABCD, terukur), lintas disiplin ilmu, topik kontekstual, praktik pedagogis (model/strategi + alasan), kemitraan pembelajaran, lingkungan belajar, pemanfaatan teknologi digital</div>
+                <div>
+                  4. Pengalaman Belajar per pertemuan, dengan tahapan:<br/>
+                  &nbsp;&nbsp;&nbsp;- Memahami (berkesadaran &amp; bermakna)<br/>
+                  &nbsp;&nbsp;&nbsp;- Mengaplikasi (bermakna &amp; menggembirakan)<br/>
+                  &nbsp;&nbsp;&nbsp;- Merefleksi (berkesadaran)<br/>
+                  &nbsp;&nbsp;&nbsp;Sertakan awal, inti, penutup, dengan kegiatan guru dan murid, durasi menit, serta pertanyaan pemantik.
+                </div>
+                <div>5. Asesmen: awal (diagnostik), proses (formatif, dengan rubrik/instrumen), akhir (sumatif, dengan rubrik 4 level)</div>
+                <div>6. Lampiran: LKPD singkat, bahan ajar ringkas, rubrik, dan tindak lanjut (pengayaan &amp; remedial)</div>
+                <div class="text-right pt-1">
+                  <span class="text-[10px] font-sans font-extrabold uppercase tracking-wider text-blue-700 bg-blue-50 px-2 py-0.5 rounded inline-block">Copy sampai sini ya</span>
+                </div>
+              </div>
+            </div>
+
             <form onsubmit="window.app.executeGenerateRpm(event)" class="space-y-3.5">
               <div>
                 <label class="font-bold text-xs text-slate-700 block mb-1.5">Data Pembelajaran Guru:</label>
-                <textarea id="ai-rpm-prompt" rows="12" required
+                <textarea id="ai-rpm-prompt" rows="10" required
+                  placeholder="Tempelkan (paste) prompt RPM yang telah Anda isi di sini..."
                   oninput="window.app.updateRpmInputState(this.value)"
                   class="w-full p-3.5 text-xs font-mono rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 outline-none leading-relaxed transition bg-white">${currentInput}</textarea>
               </div>
@@ -1332,6 +1465,11 @@ ATURAN:
                     class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs flex items-center gap-1 shadow-sm transition">
                     <i data-lucide="save" class="w-3.5 h-3.5"></i>
                     <span>Simpan Arsip</span>
+                  </button>
+                  <button type="button" onclick="window.app.deleteGeneratedRpm()"
+                    class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs flex items-center gap-1 border border-rose-200 transition" title="Hapus Hasil Dokumen RPM">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                    <span>Hapus</span>
                   </button>
                 </div>
               ` : ''}
@@ -2206,11 +2344,80 @@ ATURAN:
       },
 
       resetRpmTemplateInput() {
-        state.aiRpmInputText = RPM_INPUT_TEMPLATE;
+        state.aiRpmInputText = '';
         const el = document.getElementById('ai-rpm-prompt');
-        if (el) el.value = RPM_INPUT_TEMPLATE;
+        if (el) el.value = '';
         saveLocalState();
-        showToast('Kolom data masukan guru dikembalikan ke format awal.');
+        showToast('Kolom data pembelajaran guru telah dibersihkan.');
+      },
+
+      copyRpmGuidePrompt() {
+        copyToClipboard(RPM_PROMPT_GUIDE_COPY_TEXT);
+      },
+
+      downloadRpmGuideWord() {
+        const guideHtml = `
+          <div style="font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #111827;">
+            <p><strong>Panduan Pembuatan Prompt :</strong></p>
+            <ol>
+              <li>Isi data yang diperlukan (semakin banyak informasi/data yang diberikan semakin bagus hasilnya)</li>
+              <li>Hapus dan ganti <span style="color: #DC2626; font-weight: bold;">teks berwarna merah</span></li>
+              <li>Jika dirasa cukup salin/copy semua data yang telah diisi kemudian paste pada kolom Generate RPM dengan AI</li>
+              <li>Jangan lupa cek Kembali hasilnya, unduh dan edit bagian yang tidak sesuai (ingat AI hanya membantu dan bisa salah)</li>
+            </ol>
+            <p style="color: #1D4ED8; font-weight: bold; margin-top: 14pt;">Copy nya nanti dari sini ya !</p>
+            <div style="border: 1pt solid #94A3B8; padding: 10pt; background-color: #F8FAFC;">
+              <p><strong>Peran:</strong> Kamu adalah pakar kurikulum dan pedagogi Indonesia yang menguasai pendekatan Pembelajaran Mendalam (Kemendikdasmen).</p>
+              <p><strong>Tugas:</strong> Susun Rencana Pembelajaran Mendalam (RPM) yang siap pakai, operasional, dan kontekstual.</p>
+              <p><strong>DATA:</strong><br/>
+              1. Nama satuan pendidikan: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
+              2. Nama guru: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
+              3. Jenjang pendidikan: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
+              4. Mata pelajaran: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
+              5. Fase dan kelas: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
+              6. Semester dan tahun ajaran: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
+              7. Topik atau materi: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
+              8. Jumlah pertemuan: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
+              9. Alokasi waktu setiap pertemuan: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
+              10. Capaian Pembelajaran: <span style="color: #DC2626; font-weight: bold;">[tempelkan kutipan CP dari sumber resmi]</span><br/>
+              11. Pengetahuan awal dan kebutuhan belajar murid: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
+              12. Sarana, media, dan lingkungan belajar: <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
+              13. Tujuan pembelajaran : <span style="color: #DC2626; font-weight: bold;">[isi]</span><br/>
+              <span style="color: #DC2626; font-weight: bold;">
+              14. Instrumen dan lampiran, Sertakan sesuai kebutuhan :<br/>
+              &nbsp;&nbsp;&nbsp;- LKPD dengan petunjuk, tugas, dan hasil yang diharapkan;<br/>
+              &nbsp;&nbsp;&nbsp;- soal beserta kunci dan pedoman penskoran;<br/>
+              &nbsp;&nbsp;&nbsp;- lembar observasi;<br/>
+              &nbsp;&nbsp;&nbsp;- rubrik analitik;<br/>
+              &nbsp;&nbsp;&nbsp;- bahan ajar ringkas;<br/>
+              &nbsp;&nbsp;&nbsp;- pertanyaan refleksi murid dan guru.
+              </span></p>
+              <p><strong>STRUKTUR RPM:</strong><br/>
+              1. Identitas<br/>
+              2. Identifikasi: kesiapan murid, karakteristik materi, dimensi profil lulusan<br/>
+              3. Desain Pembelajaran: tujuan pembelajaran (ABCD, terukur), lintas disiplin ilmu, topik kontekstual, praktik pedagogis (model/strategi + alasan), kemitraan pembelajaran, lingkungan belajar, pemanfaatan teknologi digital<br/>
+              4. Pengalaman Belajar per pertemuan, dengan tahapan:<br/>
+              &nbsp;&nbsp;&nbsp;- Memahami (berkesadaran &amp; bermakna)<br/>
+              &nbsp;&nbsp;&nbsp;- Mengaplikasi (bermakna &amp; menggembirakan)<br/>
+              &nbsp;&nbsp;&nbsp;- Merefleksi (berkesadaran)<br/>
+              &nbsp;&nbsp;&nbsp;Sertakan awal, inti, penutup, dengan kegiatan guru dan murid, durasi menit, serta pertanyaan pemantik.<br/>
+              5. Asesmen: awal (diagnostik), proses (formatif, dengan rubrik/instrumen), akhir (sumatif, dengan rubrik 4 level)<br/>
+              6. Lampiran: LKPD singkat, bahan ajar ringkas, rubrik, dan tindak lanjut (pengayaan &amp; remedial)</p>
+            </div>
+            <p style="text-align: right; color: #1D4ED8; font-weight: bold;">Copy sampai sini ya</p>
+          </div>
+        `;
+        downloadWordDoc('Panduan_Pembuatan_Prompt_RPM', 'Panduan Pembuatan Prompt RPM', guideHtml);
+      },
+
+      deleteGeneratedRpm() {
+        if (!state.aiGeneratedRpm) return;
+        askConfirm('Hapus Hasil Dokumen RPM?', 'Hasil dokumen RPM yang sedang ditampilkan akan dihapus.', () => {
+          state.aiGeneratedRpm = null;
+          saveLocalState();
+          renderActiveModule();
+          showToast('Hasil dokumen RPM berhasil dihapus.');
+        });
       },
 
       async executeGenerateRpm(e) {
